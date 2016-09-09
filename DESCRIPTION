@@ -1,12 +1,15 @@
 Package: cytominrworkshop
 Type: Package
-Title: What the Package Does (Title Case)
+Title: cytominr workshop vignettes
 Version: 0.1.0
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: More about what it does (maybe more than one line)
+Authors@R: as.person(c(
+    "Allen Goodman <allen.goodman@icloud.com> [aut]",
+    "Shantanu Singh <shsingh@broadinstitute.org> [aut, cre]"
+  ))
+Description: cytominr workshop vignettes.
 License: MIT + file LICENSE
 LazyData: TRUE
-Suggests: testthat,
+Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
