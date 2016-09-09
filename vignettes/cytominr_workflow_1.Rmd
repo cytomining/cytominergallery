@@ -1,58 +1,77 @@
 ---
-title: "Vignette Title"
-author: "Vignette Author"
+  title: "Morphological profiling"
+author: "Allen Goodman and Shantanu Singh"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Morphological profiling}
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteEncoding{UTF-8}
 ---
 
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+  Typical morphological profiling datasets have millions of cells
+and hundreds of features per cells. When working with this data, you must
 
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+- clean the data
 
-## Vignette Info
+- normalize the features so that they are comparable across experiments
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+- transform the features so that their distributions are well-behaved (
+  i.e., bring them in line with assumptions we want to make about their
+  disributions)
 
-## Styles
+- select features based on their quality
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+- aggregate the single-cell data, if needed
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
+The cytominr package makes these steps fast and easy.
 
-## Figures
+## Load data
+First, load the data, which is stored in a database backend created using
+https://github.com/0x00B1/persistence.
 
-The figure sizes have been customised so that you can easily put two images side-by-side. 
+```{r}
+library(magrittr)
 
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+```{r load_data}
+db <- dplyr::src_sqlite(path = "~/tmp/az/backend/Week1/Week1.sqlite")
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+image <- dplyr::tbl(src = db, "Image")
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+object <-
+  dplyr::tbl(src = db, "Cells") %>%
+  dplyr::inner_join(dplyr::tbl(src = db, "Cytoplasm"),
+                    by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  dplyr::inner_join(dplyr::tbl(src = db, "Nuclei"),
+                    by = c("TableNumber", "ImageNumber", "ObjectNumber"))
 
-## More Examples
+object %<>% dplyr::inner_join(image, by = c("TableNumber", "ImageNumber"))
 
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+feature_cols <-
+  colnames(object) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
-Also a quote using `>`:
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+```{r}
+aggregated <-
+  cytominr::aggregate(
+    population = object,
+    variables = feature_cols,
+    strata = c("Image_Metadata_Plate", "Image_Metadata_Well"),
+    operation = "mean"
+  )
+
+plate_count <-
+  aggregated %>%
+  dplyr::count(Image_Metadata_Plate) %>%
+  dplyr::collect()
+
+aggregated %<>%
+  dplyr::collect()
+
+
+```
+
