@@ -7,11 +7,14 @@ Authors@R: as.person(c(
     "Shantanu Singh <shsingh@broadinstitute.org> [aut, cre]"
   ))
 Description: cytominr workshop vignettes.
+Depends:
+    R (>= 3.1.0)
 License: MIT + file LICENSE
 LazyData: TRUE
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominrworkshop
 BugReports: https://github.com/shntnu/cytominrworkshop/issues
