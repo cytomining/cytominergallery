@@ -1,15 +1,15 @@
 ---
-  title: "Morphological profiling"
+title: "Morphological profiling"
 author: "Allen Goodman and Shantanu Singh"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Morphological profiling}
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
-  Typical morphological profiling datasets have millions of cells
+Typical morphological profiling datasets have millions of cells
 and hundreds of features per cells. When working with this data, you must
 
 - clean the data
@@ -26,17 +26,29 @@ and hundreds of features per cells. When working with this data, you must
 
 The cytominr package makes these steps fast and easy.
 
-## Load data
-First, load the data, which is stored in a database backend created using
-https://github.com/0x00B1/persistence.
+This vignette demonstrates how to aggregate single cell measurements and 
+store the result. 
 
-```{r}
+## Load data
+
+```{r libraries}
 library(magrittr)
 
 ```
 
-```{r load_data}
-db <- dplyr::src_sqlite(path = "~/tmp/az/backend/Week1/Week1.sqlite")
+
+```{r download}
+backend <- file.path(tempdir(), "BBBC021.sqlite")
+
+download.file("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/BBBC021.sqlite",
+              backend)
+
+```
+
+
+```{r load}
+
+db <- dplyr::src_sqlite(path = backend)
 
 image <- dplyr::tbl(src = db, "Image")
 
@@ -55,7 +67,9 @@ feature_cols <-
 ```
 
 
-```{r}
+## Summarize measurements per well
+
+```{r aggregate}
 aggregated <-
   cytominr::aggregate(
     population = object,
@@ -64,14 +78,22 @@ aggregated <-
     operation = "mean"
   )
 
-plate_count <-
-  aggregated %>%
-  dplyr::count(Image_Metadata_Plate) %>%
-  dplyr::collect()
-
 aggregated %<>%
   dplyr::collect()
 
+aggregated %>%
+  readr::write_csv("bbbc021_well_profiles.csv")
+```
 
+## Plot some data
+
+```{r plot}
+library(ggplot2)
+
+p <- 
+  ggplot(aggregated, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) + 
+  geom_hex()
+
+print(p)
 ```
 

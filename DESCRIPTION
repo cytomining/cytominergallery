@@ -15,3 +15,5 @@ Suggests:
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominrworkshop
 BugReports: https://github.com/shntnu/cytominrworkshop/issues
+Imports: ggplot2,
+    hexbin
