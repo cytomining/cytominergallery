@@ -37,7 +37,7 @@ library(magrittr)
 ```
 
 
-```{r download}
+```{r download, cache=TRUE}
 backend <- file.path(tempdir(), "BBBC021.sqlite")
 
 download.file("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/BBBC021.sqlite",
