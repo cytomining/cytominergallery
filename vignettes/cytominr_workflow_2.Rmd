@@ -12,6 +12,7 @@ vignette: >
 
 ```{r libraries}
 library(magrittr)
+library(ggplot2)
 
 ```
 
@@ -64,16 +65,121 @@ feature_cols <-
 ```
 
 
+## Filter based on replicability of features
+
+```{r feature_replicate_scores}
+library(foreach)
+# library(doMC)
+# doMC::registerDoMC()
+
+calculate_feature_replicate_correlations <- 
+  function(data, feature_cols, grouping_cols, replicate_count, 
+           key_col = NULL, split_col=NULL) {
+
+  calculate_feature_replicate_correlation <- function(data, 
+                                                      feature_col, 
+                                                      grouping_cols, 
+                                                      key_col) {
+  
+    nonkey_grouping_cols <- setdiff(grouping_cols, key_col)
+    
+    correlation_matrix <- 
+      data %>%
+      dplyr::arrange_(.dots = grouping_cols) %>%
+      dplyr::select_(.dots = c(grouping_cols, feature_col)) %>% 
+      tidyr::spread_(key_col, feature_col) %>% 
+      dplyr::select_(~-dplyr::one_of(nonkey_grouping_cols)) %>%
+      cor()
+    
+    median(correlation_matrix[upper.tri(correlation_matrix)])
+  }
+  
+  if (is.null(split_col)) {
+    data %<>% dplyr::mutate(split_col = 0) 
+    
+    split_col <- "split_col"
+  }
+  
+  if (is.null(key_col)) {
+    data %<>% 
+      dplyr::count_(vars = grouping_cols) %>% 
+      dplyr::filter(n == replicate_count) %>% 
+      dplyr::select(-n) %>% 
+      dplyr::inner_join(data) %>% 
+      dplyr::group_by_(.dots = grouping_cols) %>% 
+      dplyr::mutate_(.dots = setNames(list(~dplyr::row_number(split_col)), "rep_col")) %>% 
+      dplyr::ungroup() 
+    
+    key_col <- "rep_col"
+    
+    grouping_cols <- c(grouping_cols, key_col)    
+  }
+
+  foreach::foreach(feature_col = feature_cols, .combine = rbind) %dopar%
+    {
+      
+      data %>%
+        split(.[split_col]) %>%
+        purrr::map_df(calculate_feature_replicate_correlation, 
+                      feature_col = feature_col,
+                      grouping_cols = grouping_cols,
+                      key_col = key_col) %>% 
+        dplyr::mutate(feature_col = feature_col)
+    } %>%
+      tidyr::gather_(key_col, "pearson", setdiff(names(.), "feature_col")) %>% 
+      dplyr::group_by_(.dots = c("feature_col")) %>% 
+      dplyr::summarize_at("pearson", dplyr::funs(median, min, max))
+}
+
+```
+
+
+```{r feature_replicate_scores_calculate}
+
+feature_replicate_correlations <-
+  profiles %>% 
+  calculate_feature_replicate_correlations(
+    feature_cols = feature_cols,
+    grouping_cols = c("Image_Metadata_Compound", "Image_Metadata_Concentration"),
+    replicate_count = 3
+  )
+
+ggplot(feature_replicate_correlations, aes(median))  + 
+  stat_ecdf() + 
+  geom_vline(xintercept = 0.6, color = "red") + 
+  xlab("median replicate correlation (Pearson)") +
+  ylab("F(x)")
+  
+
+```
+
+
+```{r filter_based_on_feature_replicate_correlations}
+
+profiles %<>% 
+  dplyr::select_(.dots = 
+                   setdiff(x = colnames(profiles), 
+                           y = feature_replicate_correlations %>% 
+                             dplyr::filter(median < 0.5) %>% 
+                             magrittr::extract2("feature_col"))
+                 )
+
+feature_cols <-
+  colnames(profiles) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+```
+
+
 ## Filter based on correlation of features
 
-```{r correlation_threshold, eval=TRUE}
+```{r correlation_threshold}
 profiles <-
   cytominr::select(
     population = profiles,
     variables = feature_cols,
     sample = profiles,
-    operation = "correlation_threshold"
-  ) %>%
+    operation = "correlation_threshold",
+    cutoff = 0.95) %>%
   dplyr::collect()
 
 feature_cols <-
