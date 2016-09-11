@@ -13,6 +13,7 @@ License: MIT + file LICENSE
 LazyData: TRUE
 Imports:
     caret,
+    cytominr,
     dplyr,
     e1071,
     futile.logger,
