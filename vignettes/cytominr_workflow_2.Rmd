@@ -141,7 +141,11 @@ cpd <- profiles$Image_Metadata_Compound
 
 moa <- as.character(profiles$Image_Metadata_MoA)
 
-cor_mat <- cor_mat * as.integer(outer(cpd, cpd, FUN="!="))
+mask <- as.integer(outer(cpd, cpd, FUN="!="))
+
+mask[mask == 0] <- -Inf
+  
+cor_mat <- cor_mat * mask
 
 pred <- sapply(1:nrow(cor_mat), 
                function(i) moa[order(cor_mat[i,], decreasing = TRUE)[1]])
