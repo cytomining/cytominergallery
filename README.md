@@ -12,5 +12,5 @@ To install from GitHub:
 
 ```R
 # install.packages("devtools")
-devtools::install_github("shntnu/cytominrworkshop")
+devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE)
 ```
