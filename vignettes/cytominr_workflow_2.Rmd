@@ -18,8 +18,7 @@ library(magrittr)
 
 
 ```{r download}
-profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013_per_well_mean.csv",
-              profiles)
+profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013_per_well_mean.csv")
 
 moa <-
   readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_moa.csv") %>%
@@ -39,6 +38,11 @@ metadata <-
 
 profiles %<>%
   dplyr::inner_join(metadata)
+
+feature_cols <-
+  colnames(profiles) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+
 ```
 
 
@@ -77,14 +81,15 @@ feature_cols <-
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
+## Normalize with respect to DMSO
 
 ```{r normalize}
 
-normalized <-
+profiles <-
   cytominr::normalize(
     population = profiles,
     variables = feature_cols,
     strata =  c("Image_Metadata_Plate"),
-    sample = profiles %>% dplyr::filter(Metadata_broad_sample_type == "control")
+    sample = profiles %>% dplyr::filter(Image_Metadata_Compound == "DMSO")
   )
 ```
