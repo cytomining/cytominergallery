@@ -1,33 +1,16 @@
 ---
-title: "Morphological profiling"
+title: "Summarize single-cell data"
 author: "Allen Goodman and Shantanu Singh"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Morphological profiling}
+  %\VignetteIndexEntry{Summarize single-cell data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-Typical morphological profiling datasets have millions of cells
-and hundreds of features per cells. When working with this data, you must
-
-- clean the data
-
-- normalize the features so that they are comparable across experiments
-
-- transform the features so that their distributions are well-behaved (
-  i.e., bring them in line with assumptions we want to make about their
-  disributions)
-
-- select features based on their quality
-
-- aggregate the single-cell data, if needed
-
-The cytominr package makes these steps fast and easy.
-
-This vignette demonstrates how to aggregate single cell measurements and 
-store the result. 
+This vignette demonstrates how to summarize single-cell measurements into 
+per-well profiles.
 
 ## Load data
 
@@ -37,16 +20,16 @@ library(magrittr)
 ```
 
 
-```{r download, cache=TRUE}
-backend <- file.path(tempdir(), "BBBC021.sqlite")
+```{r download, eval=FALSE}
+backend <- file.path(tempdir(), "ljosa_jbiomolscreen_2013.sqlite")
 
-download.file("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/BBBC021.sqlite",
+download.file("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite",
               backend)
 
 ```
 
 
-```{r load}
+```{r load, eval=FALSE}
 
 db <- dplyr::src_sqlite(path = backend)
 
@@ -69,7 +52,7 @@ feature_cols <-
 
 ## Summarize measurements per well
 
-```{r aggregate}
+```{r aggregate, eval=FALSE}
 aggregated <-
   cytominr::aggregate(
     population = object,
@@ -82,12 +65,12 @@ aggregated %<>%
   dplyr::collect()
 
 aggregated %>%
-  readr::write_csv("bbbc021_well_profiles.csv")
+  readr::write_csv("ljosa_jbiomolscreen_2013_per_well_mean.csv")
 ```
 
 ## Plot some data
 
-```{r plot}
+```{r plot, eval=FALSE}
 library(ggplot2)
 
 p <- 
