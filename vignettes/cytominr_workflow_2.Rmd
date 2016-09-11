@@ -10,12 +10,12 @@ vignette: >
 ---
 
 
-
 ```{r libraries}
 library(magrittr)
 
 ```
 
+## Load data
 
 ```{r download}
 profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013_per_well_mean.csv")
@@ -46,7 +46,7 @@ feature_cols <-
 ```
 
 
-# Filter based on variance
+## Filter based on variance
 
 ```{r variance_threshold}
 profiles <-
@@ -64,9 +64,9 @@ feature_cols <-
 ```
 
 
-# Filter based on correlation of features
+## Filter based on correlation of features
 
-```{r correlation_threshold}
+```{r correlation_threshold, eval=TRUE}
 profiles <-
   cytominr::select(
     population = profiles,
@@ -81,7 +81,8 @@ feature_cols <-
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
-## Normalize with respect to DMSO
+
+## Normalize with reference to DMSO
 
 ```{r normalize}
 
@@ -92,4 +93,60 @@ profiles <-
     strata =  c("Image_Metadata_Plate"),
     sample = profiles %>% dplyr::filter(Image_Metadata_Compound == "DMSO")
   )
+
+profiles <-
+  cytominr::select(
+      population = profiles,
+      variables = feature_cols,
+      operation = "drop_na_columns"
+  )
+
+feature_cols <-
+  colnames(profiles) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+
 ```
+
+
+## Calculate treatment profiles
+
+```{r treatment_profiles}
+
+profiles <-
+  cytominr::aggregate(
+    population = profiles,
+    variables = feature_cols,
+    strata = c("Image_Metadata_Compound", 
+               "Image_Metadata_Concentration",
+               "Image_Metadata_MoA"),
+    operation = "mean"
+  )
+```
+
+
+## Predict MoA
+
+```{r predict_moa}
+profiles %<>% 
+  dplyr::filter(Image_Metadata_Compound != "DMSO") 
+  
+cor_mat <- 
+  profiles %>%
+  dplyr::select(dplyr::one_of(feature_cols)) %>% 
+  as.matrix() %>% 
+  t() %>%
+  cor()
+
+cpd <- profiles$Image_Metadata_Compound
+
+moa <- as.character(profiles$Image_Metadata_MoA)
+
+cor_mat <- cor_mat * as.integer(outer(cpd, cpd, FUN="!="))
+
+pred <- sapply(1:nrow(cor_mat), 
+               function(i) moa[order(cor_mat[i,], decreasing = TRUE)[1]])
+
+caret::confusionMatrix(pred, moa)
+  
+```
+

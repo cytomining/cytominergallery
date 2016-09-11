@@ -12,7 +12,9 @@ Depends:
 License: MIT + file LICENSE
 LazyData: TRUE
 Imports:
+    caret,
     dplyr,
+    e1071,
     futile.logger,
     ggplot2,
     hexbin,
