@@ -11,13 +11,22 @@ Depends:
     R (>= 3.1.0)
 License: MIT + file LICENSE
 LazyData: TRUE
+Imports:
+    dplyr,
+    futile.logger,
+    ggplot2,
+    hexbin,
+    lazyeval,
+    magrittr,
+    tibble
 Suggests:
     knitr,
+    readr,
+    stringr,
     rmarkdown,
-    testthat
+    RSQLite,
+    testthat,
+    tidyr
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominrworkshop
 BugReports: https://github.com/shntnu/cytominrworkshop/issues
-Imports: ggplot2,
-    hexbin,
-    dplyr
