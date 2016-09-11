@@ -27,6 +27,7 @@ Suggests:
     RSQLite,
     testthat,
     tidyr
+Remotes: CellProfiler/cytominr
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominrworkshop
 BugReports: https://github.com/shntnu/cytominrworkshop/issues
