@@ -11,24 +11,21 @@ Depends:
     R (>= 3.1.0)
 License: MIT + file LICENSE
 LazyData: TRUE
-Imports:
+Suggests:
     caret,
     cytominr,
-    dplyr,
     e1071,
-    futile.logger,
     ggplot2,
     hexbin,
+    knitr,
     lazyeval,
     magrittr,
-    tibble
-Suggests:
-    knitr,
     readr,
-    stringr,
     rmarkdown,
     RSQLite,
+    stringr,
     testthat,
+    tibble,
     tidyr
 Remotes: CellProfiler/cytominr
 VignetteBuilder: knitr
