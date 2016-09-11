@@ -1,0 +1,90 @@
+---
+title: "Morphological profiling"
+author: "Allen Goodman and Shantanu Singh"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Morphological profiling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+```{r libraries}
+library(magrittr)
+
+```
+
+
+```{r download}
+profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013_per_well_mean.csv",
+              profiles)
+
+moa <-
+  readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_moa.csv") %>%
+  dplyr::rename(Image_Metadata_Compound = compound,
+                Image_Metadata_Concentration = concentration,
+                Image_Metadata_MoA = moa
+  )
+
+metadata <-
+  readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_image.csv") %>%
+  dplyr::rename(Image_Metadata_Plate = Image_Metadata_Plate_DAPI,
+                Image_Metadata_Well = Image_Metadata_Well_DAPI
+  ) %>%
+  dplyr::select(dplyr::matches("^Image_Metadata")) %>%
+  dplyr::inner_join(moa) %>%
+  dplyr::distinct()
+
+profiles %<>%
+  dplyr::inner_join(metadata)
+```
+
+
+# Filter based on variance
+
+```{r variance_threshold}
+profiles <-
+  cytominr::select(
+    population = profiles,
+    variables = feature_cols,
+    sample = profiles,
+    operation = "variance_threshold"
+  ) %>%
+  dplyr::collect()
+
+feature_cols <-
+  colnames(profiles) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+```
+
+
+# Filter based on correlation of features
+
+```{r correlation_threshold}
+profiles <-
+  cytominr::select(
+    population = profiles,
+    variables = feature_cols,
+    sample = profiles,
+    operation = "correlation_threshold"
+  ) %>%
+  dplyr::collect()
+
+feature_cols <-
+  colnames(profiles) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+```
+
+
+```{r normalize}
+
+normalized <-
+  cytominr::normalize(
+    population = profiles,
+    variables = feature_cols,
+    strata =  c("Image_Metadata_Plate"),
+    sample = profiles %>% dplyr::filter(Metadata_broad_sample_type == "control")
+  )
+```
