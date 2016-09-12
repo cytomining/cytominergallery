@@ -42,7 +42,7 @@ metadata <-
 profiles %<>%
   inner_join(metadata)
 
-feature_cols <-
+variables <-
   colnames(profiles) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 
@@ -55,13 +55,13 @@ feature_cols <-
 profiles <-
   cytominr::select(
     population = profiles,
-    variables = feature_cols,
+    variables = variables,
     sample = profiles,
     operation = "variance_threshold"
   ) %>%
   collect()
 
-feature_cols <-
+variables <-
   colnames(profiles) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
@@ -77,7 +77,7 @@ doParallel::registerDoParallel(cores = 2)
 feature_replicate_correlations <-
   profiles %>% 
   variable_quality(
-    variables = feature_cols,
+    variables = variables,
     strata = c("Image_Metadata_Compound", "Image_Metadata_Concentration"),
     replicates = 3
   )
@@ -95,14 +95,13 @@ ggplot(feature_replicate_correlations, aes(median))  +
 ```{r filter_based_on_feature_replicate_correlations}
 
 profiles %<>% 
-  select_(.dots = 
-                   setdiff(x = colnames(profiles), 
-                           y = feature_replicate_correlations %>% 
-                             filter(median < 0.5) %>% 
-                             magrittr::extract2("feature_col"))
-                 )
+  select_(.dots = setdiff(x = colnames(profiles), 
+                          y = feature_replicate_correlations %>% 
+                            filter(median < 0.5) %>% 
+                            magrittr::extract2("variable"))
+          )
 
-feature_cols <-
+variables <-
   colnames(profiles) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
@@ -114,13 +113,13 @@ feature_cols <-
 profiles <-
   cytominr::select(
     population = profiles,
-    variables = feature_cols,
+    variables = variables,
     sample = profiles,
     operation = "correlation_threshold",
     cutoff = 0.95) %>%
   collect()
 
-feature_cols <-
+variables <-
   colnames(profiles) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
@@ -133,7 +132,7 @@ feature_cols <-
 profiles <-
   cytominr::normalize(
     population = profiles,
-    variables = feature_cols,
+    variables = variables,
     strata =  c("Image_Metadata_Plate"),
     sample = profiles %>% filter(Image_Metadata_Compound == "DMSO")
   )
@@ -141,11 +140,11 @@ profiles <-
 profiles <-
   cytominr::select(
       population = profiles,
-      variables = feature_cols,
+      variables = variables,
       operation = "drop_na_columns"
   )
 
-feature_cols <-
+variables <-
   colnames(profiles) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 
@@ -159,7 +158,7 @@ feature_cols <-
 profiles <-
   cytominr::aggregate(
     population = profiles,
-    variables = feature_cols,
+    variables = variables,
     strata = c("Image_Metadata_Compound", 
                "Image_Metadata_Concentration",
                "Image_Metadata_MoA"),
@@ -176,7 +175,7 @@ profiles %<>%
   
 correlation <- 
   profiles %>%
-  select(one_of(feature_cols)) %>% 
+  select(one_of(variables)) %>% 
   as.matrix() %>% 
   t() %>%
   cor()
