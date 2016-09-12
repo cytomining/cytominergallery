@@ -12,6 +12,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %<>%
 #' @importFrom foreach %dopar%
+#' @importFrom stats median
 #'
 #' @export
 #'
