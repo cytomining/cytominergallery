@@ -2,7 +2,7 @@ context("variable_quality")
 
 test_that("`variable_quality` measure replicate reproducibility of variables", {
 
-  doParallel::registerDoParallel()
+  foreach::registerDoSEQ()
 
   x1 <- rnorm(50)
   x2 <- x1 + rnorm(50)/10

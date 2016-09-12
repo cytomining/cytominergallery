@@ -26,7 +26,7 @@ variable_quality <-
         dplyr::select_(.dots = c(strata, variable)) %>%
         tidyr::spread_(key, variable) %>%
         dplyr::select_(~-dplyr::one_of(setdiff(strata, key))) %>%
-        cor()
+        stats::cor()
 
       median(correlation_matrix[upper.tri(correlation_matrix)])
     }
@@ -47,7 +47,7 @@ variable_quality <-
         dplyr::select(-n) %>%
         dplyr::inner_join(sample) %>%
         dplyr::group_by_(.dots = strata) %>%
-        dplyr::mutate_(.dots = setNames(list(~dplyr::row_number(batch)), key)) %>%
+        dplyr::mutate_(.dots = stats::setNames(list(~dplyr::row_number(batch)), key)) %>%
         dplyr::ungroup()
 
       strata <- c(strata, key)
