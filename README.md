@@ -17,7 +17,7 @@ After downloading, install from GitHub:
 devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE)
 ```
 
-You may need to do this in order to build the vignettes correctly (seems like a bug in `install_github`):
+You may need to do run that again in order to build the vignettes correctly (seems like a bug in `install_github`):
 ```R
 devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE, force = TRUE)
 ```
