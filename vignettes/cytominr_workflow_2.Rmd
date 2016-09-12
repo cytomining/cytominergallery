@@ -10,28 +10,35 @@ vignette: >
 ---
 
 
-```{r libraries}
+```{r libraries, message=FALSE}
 library(cytominrworkshop)
 library(dplyr)
 library(magrittr)
 library(ggplot2)
+library(stringr)
 
 ```
 
 ## Load data
 
-```{r download}
-profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013_per_well_mean.csv")
+```{r download, message=FALSE}
+
+
+profiles <- 
+  readr::read_csv(system.file("extdata", "ljosa_jbiomolscreen_2013_per_well_mean.csv", 
+                package = "cytominrworkshop"))
 
 moa <-
-  readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_moa.csv") %>%
+  readr::read_csv(system.file("extdata", "BBBC021_v1_moa.csv", 
+                              package = "cytominrworkshop")) %>%
   rename(Image_Metadata_Compound = compound,
                 Image_Metadata_Concentration = concentration,
                 Image_Metadata_MoA = moa
   )
 
 metadata <-
-  readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_image.csv") %>%
+  readr::read_csv(system.file("extdata", "BBBC021_v1_image.csv", 
+                              package = "cytominrworkshop")) %>%
   rename(Image_Metadata_Plate = Image_Metadata_Plate_DAPI,
                 Image_Metadata_Well = Image_Metadata_Well_DAPI
   ) %>%
@@ -44,14 +51,14 @@ profiles %<>%
 
 variables <-
   colnames(profiles) %>%
-  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 
 ```
 
 
 ## Filter based on variance
 
-```{r variance_threshold}
+```{r variance_threshold, message=FALSE}
 profiles <-
   cytominr::select(
     population = profiles,
@@ -63,14 +70,14 @@ profiles <-
 
 variables <-
   colnames(profiles) %>%
-  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
 
 ## Filter based on replicability of features
 
 
-```{r feature_replicate_scores_calculate}
+```{r feature_replicate_scores_calculate, fig.width=4, fig.height=4, message=FALSE}
 
 doParallel::registerDoParallel(cores = 2)
 
@@ -92,7 +99,7 @@ ggplot(feature_replicate_correlations, aes(median))  +
 ```
 
 
-```{r filter_based_on_feature_replicate_correlations}
+```{r filter_based_on_feature_replicate_correlations, message=FALSE}
 
 profiles %<>% 
   select_(.dots = setdiff(x = colnames(profiles), 
@@ -103,13 +110,13 @@ profiles %<>%
 
 variables <-
   colnames(profiles) %>%
-  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
 
 ## Filter based on correlation of features
 
-```{r correlation_threshold}
+```{r correlation_threshold, message=FALSE}
 profiles <-
   cytominr::select(
     population = profiles,
@@ -121,13 +128,13 @@ profiles <-
 
 variables <-
   colnames(profiles) %>%
-  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
 
 ## Normalize with reference to DMSO
 
-```{r normalize}
+```{r normalize, message=FALSE}
 
 profiles <-
   cytominr::normalize(
@@ -146,14 +153,14 @@ profiles <-
 
 variables <-
   colnames(profiles) %>%
-  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 
 ```
 
 
 ## Calculate treatment profiles
 
-```{r treatment_profiles}
+```{r treatment_profiles, message=FALSE}
 
 profiles <-
   cytominr::aggregate(
@@ -169,7 +176,7 @@ profiles <-
 
 ## Predict MoA
 
-```{r predict_moa}
+```{r predict_moa, message=FALSE}
 profiles %<>% 
   filter(Image_Metadata_Compound != "DMSO") 
   
@@ -186,14 +193,44 @@ mask <- as.integer(outer(compound, compound, FUN="!="))
 
 mask[mask == 0] <- -Inf
   
-correlation <- correlation * mask
+correlation_masked <- correlation * mask
 
 mechanism <- as.character(profiles$Image_Metadata_MoA)
 
-prediction <- sapply(1:nrow(correlation), 
-               function(i) mechanism[order(correlation[i,], decreasing = TRUE)[1]])
+prediction <- sapply(1:nrow(correlation_masked), 
+               function(i) mechanism[order(correlation_masked[i,], 
+                                           decreasing = TRUE)[1]])
 
 confusion_matrix <- caret::confusionMatrix(prediction, mechanism)
-  
+
+tibble::frame_data(
+  ~metric, ~value,
+  "Accuracy", sprintf("%.2f", confusion_matrix$overall["Accuracy"]), 
+  "95% CI", sprintf("(%.2f, %.2f)", confusion_matrix$overall[["AccuracyLower"]], confusion_matrix$overall[["AccuracyUpper"]])
+) %>% knitr::kable(digits = 2)
+
+confusion_matrix$table %>% 
+  knitr::kable()
+
+```
+
+
+```{r tsne, fig.width=8, fig.height=6, message=FALSE}
+
+set.seed(123)
+
+df <- 
+  tibble::as_data_frame(
+    tsne::tsne(as.dist(1-correlation))
+    ) %>% 
+  mutate(mechanism = mechanism)
+
+p <- 
+  ggplot(df, aes(V1, V2, color=mechanism)) + 
+  geom_point() + 
+  ggtitle("t-SNE visualization of compound profiles")
+
+print(p)
+
 ```
 

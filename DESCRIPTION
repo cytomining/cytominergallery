@@ -31,7 +31,8 @@ Suggests:
     RSQLite,
     stringr,
     testthat,
-    tidyr
+    tidyr,
+    tsne
 Remotes: CellProfiler/cytominr
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominrworkshop
