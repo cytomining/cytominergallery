@@ -4,11 +4,9 @@
 
 # cytominr workshop
 
-cytominr workshop vignettes
-
 ## Installation
 
-The vignette `single_cell_analysis` requires  <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> to be downloaded into `~/Downloads`.
+*NOTE*: The vignette `single_cell_analysis` requires  <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> to be downloaded into `~/Downloads`.
 
 After downloading, install from GitHub:
 
@@ -16,3 +14,17 @@ After downloading, install from GitHub:
 # install.packages("devtools")
 devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE)
 ```
+
+You may need to do run that again in order to build the vignettes correctly (seems like a bug in `install_github`):
+```R
+devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE, force = TRUE)
+```
+
+Browse vignettes (launches in default browser)
+```R
+browseVignettes()
+```
+
+Search for "Vignettes in package cytominrworkshop" and click on the link `HTML` to view the vignettes.
+
+
