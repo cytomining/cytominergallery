@@ -8,7 +8,7 @@
 
 Install [R](https://www.r-project.org) and [RStudio](https://www.rstudio.com/).
 
-Download <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite>  into `~/Downloads` (required by the vignette `single_cell_analysis`).
+Download this [sqlite](https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite) file into `~/Downloads` (required by the vignette `single_cell_analysis`).
 
 Install the `cytominrworkshop` package from GitHub:
 
