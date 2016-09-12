@@ -151,7 +151,7 @@ ggplot(feature_replicate_correlations, aes(median))  +
 Here, we select a threshold and remove features that have a replicate 
 correlation lower than that threshold
 
-```{r filter_based_on_feature_replicate_correlations, message=FALSE}
+```{r message=FALSE}
 
 profiles %<>% 
   select_(.dots = setdiff(x = colnames(profiles), 
@@ -173,7 +173,7 @@ sets. The function `correlation_threshold` provides an approximate (greedy)
 solution to this problem. After excluding the features, no pair of features 
 have a correlation greater than `cutoff` indicated below.
 
-```{r correlation_threshold, message=FALSE}
+```{r message=FALSE}
 profiles <-
   cytominr::select(
     population = profiles,
@@ -195,7 +195,7 @@ There may be plate-to-plate variations, which can be compensated for to some
 extent by normalizing the features with respect to the DMSO wells per plate. 
 
 
-```{r normalize, message=FALSE}
+```{r message=FALSE}
 
 profiles <-
   cytominr::normalize(
@@ -224,7 +224,7 @@ variables <-
 We have selected features and normalized the data. We can now compute 
 treatment provides by averaging across replicates.
 
-```{r treatment_profiles, message=FALSE}
+```{r message=FALSE}
 
 profiles <-
   cytominr::aggregate(
@@ -240,7 +240,7 @@ profiles <-
 
 Let's visualize this data using t-SNE. 
 
-```{r tsne, fig.width=8, fig.height=6, message=FALSE}
+```{r fig.width=8, fig.height=6, message=FALSE}
 
 profiles %<>% 
   filter(Image_Metadata_Compound != "DMSO") 
@@ -278,7 +278,7 @@ NOTE: A common mistake when analyzing this dataset is to not exclude other
 concentrations of the same compound when looking up the nearest neighbor. That 
 is cheating!
 
-```{r predict_moa, message=FALSE}
+```{r message=FALSE}
 
 compound <- profiles$Image_Metadata_Compound
 
