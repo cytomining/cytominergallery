@@ -104,7 +104,7 @@ profiles %>%
 
 Next, lets filter the set of features based on various measures of quality 
 
-Remove features that have near-zero variance. This dataset doensn't have any 
+Remove features that have near-zero variance. This dataset doesn't have any 
 such features, so nothing is removed.
 
 ```{r message=FALSE}
