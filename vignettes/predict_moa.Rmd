@@ -275,8 +275,7 @@ The data clusters into mechanisms quite nicely. Let's quantify this
 by evaluating how well we can predict mechanism-of-action by simply assigning 
 a treatment the mechanism of its nearest neighbor.
 NOTE: A common mistake when analyzing this dataset is to not exclude other 
-concentrations of the same compound when looking up the nearest neighbor. That 
-is cheating!
+concentrations of the same compound when looking up the nearest neighbor. That is cheating! The `mask` addresses this. 
 
 ```{r message=FALSE}
 
