@@ -1,4 +1,4 @@
-#' Measure feature quality based on replicate correlation
+#' Measure variable quality based on replicate correlation
 #'
 #' @param sample ...
 #' @param variables ...
@@ -7,7 +7,7 @@
 #' @param key ...
 #' @param batch ...
 #'
-#' @return data.frame of feature quality measurements
+#' @return data.frame of variable quality measurements
 #'
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %<>%
@@ -15,14 +15,13 @@
 #'
 #' @export
 #'
-#' @examples
-feature_quality <-
+variable_quality <-
   function(sample, variables, strata, replicates, key = NULL, batch = NULL) {
 
-    replicate_correlation <- function(data, variable, strata, key) {
+    replicate_correlation <- function(sample, variable, strata, key) {
 
       correlation_matrix <-
-        data %>%
+        sample %>%
         dplyr::arrange_(.dots = strata) %>%
         dplyr::select_(.dots = c(strata, variable)) %>%
         tidyr::spread_(key, variable) %>%
@@ -31,6 +30,7 @@ feature_quality <-
 
       median(correlation_matrix[upper.tri(correlation_matrix)])
     }
+
 
     if (is.null(batch)) {
       sample %<>% dplyr::mutate(batch = 0)
@@ -53,18 +53,19 @@ feature_quality <-
       strata <- c(strata, key)
     }
 
-    foreach::foreach(feature_col = variables, .combine = rbind) %dopar%
+
+    foreach::foreach(variable = variables, .combine = rbind) %dopar%
     {
 
-      data %>%
+      sample %>%
         split(.[batch]) %>%
         purrr::map_df(replicate_correlation,
-                      feature_col = feature_col,
-                      grouping_cols = strata,
-                      key_col = key) %>%
-        dplyr::mutate(feature_col = feature_col)
+                      variable = variable,
+                      strata = strata,
+                      key = key) %>%
+        dplyr::mutate(variable = variable)
     } %>%
-      tidyr::gather_(key, "pearson", setdiff(names(.), "feature_col")) %>%
-      dplyr::group_by_(.dots = c("feature_col")) %>%
+      tidyr::gather_(key, "pearson", setdiff(names(.), "variable")) %>%
+      dplyr::group_by_(.dots = c("variable")) %>%
       dplyr::summarize_at("pearson", dplyr::funs(median, min, max))
   }
