@@ -22,7 +22,7 @@ You may need to do run that again in order to build the vignettes correctly (see
 devtools::install_github("shntnu/cytominrworkshop", dependencies = TRUE, build_vignettes = TRUE, force = TRUE)
 ```
 
-Browse vignettes (launches in default browser)
+Browse vignettes (launches in default browser):
 ```R
 browseVignettes()
 ```
