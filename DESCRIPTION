@@ -13,26 +13,24 @@ License: MIT + file LICENSE
 LazyData: TRUE
 Imports:
     dplyr,
+    doParallel,
+    foreach,
     magrittr,
     tibble
 Suggests:
     caret,
     cytominr,
-    dplyr,
     e1071,
-    foreach,
     ggplot2,
     hexbin,
     knitr,
     lazyeval,
-    magrittr,
     purrr,
     readr,
     rmarkdown,
     RSQLite,
     stringr,
     testthat,
-    tibble,
     tidyr
 Remotes: CellProfiler/cytominr
 VignetteBuilder: knitr
