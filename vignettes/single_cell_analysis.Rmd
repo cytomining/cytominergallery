@@ -36,7 +36,7 @@ library(magrittr)
 ```
 
 
-## Load data
+# Load data
 
 First, load the data! The data is contained in 4 tables named `Image`, 
 `Cytoplasm`, `Cells`, and `Nuclei`. The code below joins these tables to 
@@ -86,8 +86,6 @@ object %>%
   knitr::kable()
 ```
 
-## Plot integrated DAPI intensity (per cell) for a treatment
-
 Before aggregating the data, let's filter it down to one well and plot the 
 histogram of a single feature:
 
@@ -102,11 +100,11 @@ object %>%
 
 ```
 
-## Summarize measurements per well
+# Summarize measurements per well
 
 Now let's summarize the data by grouping by well and computing averages. 
 
-```{r aggregate, message=FALSE}
+```{r message=FALSE}
 profiles <-
   cytominr::aggregate(
     population = object,
@@ -132,12 +130,9 @@ profiles %>%
 This data is used in the vignette `predict_moa` to predict the mechanism-of-action
 of compounds. 
 
-## Plot data
+Before we move on to that, let's plot the relationship between a pair of variables from this summarized data
 
-Finally, let's plot the relationship between a pair of variables from this 
-summarized data
-
-```{r plot, fig.width=6, fig.height=5, message=FALSE}
+```{r fig.width=6, fig.height=5, message=FALSE}
 p <- 
   ggplot(profiles, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) + 
   geom_hex()
