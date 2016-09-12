@@ -4,8 +4,6 @@
 
 # cytominr workshop
 
-cytominr workshop vignettes
-
 ## Installation
 
 *NOTE*: The vignette `single_cell_analysis` requires  <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> to be downloaded into `~/Downloads`.
