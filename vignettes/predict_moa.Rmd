@@ -1,10 +1,10 @@
 ---
-title: "Morphological profiling"
+title: "Predict compounds mechanism-of-action by morphological profiling"
 author: "Allen Goodman and Shantanu Singh"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Morphological profiling}
+  %\VignetteIndexEntry{Predict compounds mechanism-of-action by morphological profiling}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
