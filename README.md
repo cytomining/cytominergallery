@@ -8,7 +8,9 @@ cytominr workshop vignettes
 
 ## Installation
 
-To install from GitHub:
+The vignette `single_cell_analysis` requires  <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> to be downloaded into `~/Downloads`.
+
+After downloading, install from GitHub:
 
 ```R
 # install.packages("devtools")
