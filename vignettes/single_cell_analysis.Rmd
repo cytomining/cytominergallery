@@ -9,10 +9,24 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette demonstrates how to summarize single-cell measurements into 
-per-well profiles. It assumes that <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> has been downloaded into a directory named `Downloads` in the home directory.
+This vignette demonstrates how to summarize single-cell data from a
+morphological profiling experiment into treatment "profiles". This dataset is 
+from [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321) and is part of the
+[BBBC021](https://data.broadinstitute.org/bbbc/BBBC021/) dataset:
 
-## Load data
+> "This image set provides a basis for testing image-based profiling methods wrt. to their ability to predict the mechanisms of action of a compendium of drugs. The image set was collected using a typical set of morphological labels and uses a physiologically relevant p53-wildtype breast-cancer model system (MCF-7) and a mechanistically distinct set of targeted and cancer-relevant cytotoxic compounds that induces a broad range of gross and subtle phenotypes."
+
+The images were analyzed using [CellProfiler](http://cellprofiler.org). The
+CellProfiler pipelines and complete set of instructions to generate the data
+are provided in [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321).
+
+Here, we analyze the single-cell data to perform a simple operation: 
+summarizing them into per-well measurements by computing averages. This 
+summarized data will later be used to predict mechanism-of-action of the 
+compounds  (see the `predict_moa` vignette.)
+
+This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> have been downloaded into `~/Downloads`.
+
 
 ```{r libraries, message=FALSE}
 library(dplyr)
@@ -21,6 +35,8 @@ library(magrittr)
 
 ```
 
+
+## Load data
 
 ```{r load, message=FALSE}
 
@@ -59,8 +75,6 @@ profiles <-
 profiles %<>%
   collect()
 
-profiles %>%
-  readr::write_csv("ljosa_jbiomolscreen_2013_per_well_mean.csv")
 ```
 
 ## Plot data
