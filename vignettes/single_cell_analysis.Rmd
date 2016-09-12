@@ -38,6 +38,11 @@ library(magrittr)
 
 ## Load data
 
+First, load the data! The data is contained in 4 tables named `Image`, 
+`Cytoplasm`, `Cells`, and `Nuclei`. The code below joins these tables to 
+create a single table named `object`. 
+
+
 ```{r load, message=FALSE}
 
 backend <- file.path(Sys.getenv("HOME"), "Downloads", "ljosa_jbiomolscreen_2013.sqlite")
@@ -55,13 +60,51 @@ object <-
 
 object %<>% inner_join(image, by = c("TableNumber", "ImageNumber"))
 
+```
+
+In this table, the measurement columns start with `Nuclei_`, `Cells_`, or 
+`Cytoplasm_`. 
+
+```{r}
 variables <-
   colnames(object) %>%
   stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
 ```
 
+How many variables?
+
+```{r}
+print(length(variables))
+```
+
+How many cells?
+
+```{r}
+object %>% 
+  count() %>%
+  rename(`Number of cells` = n) %>%
+  knitr::kable()
+```
+
+## Plot integrated DAPI intensity (per cell) for a treatment
+
+Before aggregating the data, let's filter it down to one well and plot the 
+histogram of a single feature:
+
+```{r fig.width=5, fig.height=5}
+object %>% 
+  filter(Image_Metadata_Plate == "Week1_22123" && Image_Metadata_Well == "E04") %>%
+  select(Nuclei_Intensity_IntegratedIntensity_CorrDAPI) %>% 
+  collect() %>% {
+    ggplot(., aes(Nuclei_Intensity_IntegratedIntensity_CorrDAPI)) + 
+      geom_histogram(binwidth = 5)
+    }
+
+```
 
 ## Summarize measurements per well
+
+Now let's summarize the data by grouping by well and computing averages. 
 
 ```{r aggregate, message=FALSE}
 profiles <-
@@ -77,7 +120,22 @@ profiles %<>%
 
 ```
 
+How many wells?
+
+```{r}
+profiles %>% 
+  count() %>%
+  rename(`Number of wells` = n) %>%
+  knitr::kable()
+```
+
+This data is used in the vignette `predict_moa` to predict the mechanism-of-action
+of compounds. 
+
 ## Plot data
+
+Finally, let's plot the relationship between a pair of variables from this 
+summarized data
 
 ```{r plot, fig.width=6, fig.height=5, message=FALSE}
 p <- 
