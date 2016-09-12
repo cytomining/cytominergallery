@@ -12,6 +12,7 @@ vignette: >
 
 ```{r libraries}
 library(cytominrworkshop)
+library(dplyr)
 library(magrittr)
 library(ggplot2)
 
@@ -24,22 +25,22 @@ profiles <- readr::read_csv("https://s3.amazonaws.com/imaging-platform-collabora
 
 moa <-
   readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_moa.csv") %>%
-  dplyr::rename(Image_Metadata_Compound = compound,
+  rename(Image_Metadata_Compound = compound,
                 Image_Metadata_Concentration = concentration,
                 Image_Metadata_MoA = moa
   )
 
 metadata <-
   readr::read_csv("https://data.broadinstitute.org/bbbc/BBBC021/BBBC021_v1_image.csv") %>%
-  dplyr::rename(Image_Metadata_Plate = Image_Metadata_Plate_DAPI,
+  rename(Image_Metadata_Plate = Image_Metadata_Plate_DAPI,
                 Image_Metadata_Well = Image_Metadata_Well_DAPI
   ) %>%
-  dplyr::select(dplyr::matches("^Image_Metadata")) %>%
-  dplyr::inner_join(moa) %>%
-  dplyr::distinct()
+  select(matches("^Image_Metadata")) %>%
+  inner_join(moa) %>%
+  distinct()
 
 profiles %<>%
-  dplyr::inner_join(metadata)
+  inner_join(metadata)
 
 feature_cols <-
   colnames(profiles) %>%
@@ -58,7 +59,7 @@ profiles <-
     sample = profiles,
     operation = "variance_threshold"
   ) %>%
-  dplyr::collect()
+  collect()
 
 feature_cols <-
   colnames(profiles) %>%
@@ -94,10 +95,10 @@ ggplot(feature_replicate_correlations, aes(median))  +
 ```{r filter_based_on_feature_replicate_correlations}
 
 profiles %<>% 
-  dplyr::select_(.dots = 
+  select_(.dots = 
                    setdiff(x = colnames(profiles), 
                            y = feature_replicate_correlations %>% 
-                             dplyr::filter(median < 0.5) %>% 
+                             filter(median < 0.5) %>% 
                              magrittr::extract2("feature_col"))
                  )
 
@@ -117,7 +118,7 @@ profiles <-
     sample = profiles,
     operation = "correlation_threshold",
     cutoff = 0.95) %>%
-  dplyr::collect()
+  collect()
 
 feature_cols <-
   colnames(profiles) %>%
@@ -134,7 +135,7 @@ profiles <-
     population = profiles,
     variables = feature_cols,
     strata =  c("Image_Metadata_Plate"),
-    sample = profiles %>% dplyr::filter(Image_Metadata_Compound == "DMSO")
+    sample = profiles %>% filter(Image_Metadata_Compound == "DMSO")
   )
 
 profiles <-
@@ -171,29 +172,29 @@ profiles <-
 
 ```{r predict_moa}
 profiles %<>% 
-  dplyr::filter(Image_Metadata_Compound != "DMSO") 
+  filter(Image_Metadata_Compound != "DMSO") 
   
-cor_mat <- 
+correlation <- 
   profiles %>%
-  dplyr::select(dplyr::one_of(feature_cols)) %>% 
+  select(one_of(feature_cols)) %>% 
   as.matrix() %>% 
   t() %>%
   cor()
 
-cpd <- profiles$Image_Metadata_Compound
+compound <- profiles$Image_Metadata_Compound
 
-mask <- as.integer(outer(cpd, cpd, FUN="!="))
+mask <- as.integer(outer(compound, compound, FUN="!="))
 
 mask[mask == 0] <- -Inf
   
-cor_mat <- cor_mat * mask
+correlation <- correlation * mask
 
-moa <- as.character(profiles$Image_Metadata_MoA)
+mechanism <- as.character(profiles$Image_Metadata_MoA)
 
-pred <- sapply(1:nrow(cor_mat), 
-               function(i) moa[order(cor_mat[i,], decreasing = TRUE)[1]])
+prediction <- sapply(1:nrow(correlation), 
+               function(i) mechanism[order(correlation[i,], decreasing = TRUE)[1]])
 
-caret::confusionMatrix(pred, moa)
+confusion_matrix <- caret::confusionMatrix(prediction, mechanism)
   
 ```
 
