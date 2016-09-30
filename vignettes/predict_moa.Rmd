@@ -222,7 +222,7 @@ variables <-
 # Calculate treatment profiles and predict mechanism-of-action
 
 We have selected features and normalized the data. We can now compute 
-treatment provides by averaging across replicates.
+treatment profiles by averaging across replicates.
 
 ```{r message=FALSE}
 
