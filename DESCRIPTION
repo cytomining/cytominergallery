@@ -1,12 +1,12 @@
-Package: cytominrworkshop
+Package: cytominerworkshop
 Type: Package
-Title: cytominr workshop vignettes
+Title: cytominer workshop vignettes
 Version: 0.1.0
 Authors@R: as.person(c(
     "Allen Goodman <allen.goodman@icloud.com> [aut]",
     "Shantanu Singh <shsingh@broadinstitute.org> [aut, cre]"
   ))
-Description: cytominr workshop vignettes.
+Description: cytominer workshop vignettes.
 Depends:
     R (>= 3.1.0)
 License: MIT + file LICENSE
@@ -19,7 +19,7 @@ Imports:
     tibble (>= 1.2)
 Suggests:
     caret (>= 6.0-71),
-    cytominr,
+    cytominer,
     e1071 (>= 1.6-7),
     ggplot2 (>= 2.1.0),
     hexbin (>= 1.27.1),
@@ -33,8 +33,8 @@ Suggests:
     testthat (>= 1.0.2),
     tidyr (>= 0.6.0),
     tsne (>= 0.1-3)
-Remotes: CellProfiler/cytominr
+Remotes: CellProfiler/cytominer
 VignetteBuilder: knitr
-URL: https://github.com/shntnu/cytominrworkshop
-BugReports: https://github.com/shntnu/cytominrworkshop/issues
+URL: https://github.com/shntnu/cytominerworkshop
+BugReports: https://github.com/shntnu/cytominerworkshop/issues
 RoxygenNote: 5.0.1
