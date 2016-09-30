@@ -25,7 +25,7 @@ summarizing them into per-well measurements by computing averages. This
 summarized data will later be used to predict mechanism-of-action of the 
 compounds  (see the `predict_moa` vignette.)
 
-This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominr_workshop/ljosa_jbiomolscreen_2013.sqlite> have been downloaded into `~/Downloads`.
+This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite> have been downloaded into `~/Downloads`.
 
 
 ```{r libraries, message=FALSE}
@@ -105,7 +105,7 @@ Now let's summarize the data by grouping by well and computing averages.
 
 ```{r message=FALSE}
 profiles <-
-  cytominr::aggregate(
+  cytominer::aggregate(
     population = object,
     variables = variables,
     strata = c("Image_Metadata_Plate", "Image_Metadata_Well"),
