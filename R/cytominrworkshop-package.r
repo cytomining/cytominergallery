@@ -1,5 +1,5 @@
-#' cytominerworkshop.
+#' cytominrworkshop.
 #'
-#' @name cytominerworkshop
+#' @name cytominrworkshop
 #' @docType package
 NULL

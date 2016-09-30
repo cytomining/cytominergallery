@@ -1,4 +1,4 @@
 library(testthat)
-library(cytominerworkshop)
+library(cytominrworkshop)
 
-test_check("cytominerworkshop")
+test_check("cytominrworkshop")
