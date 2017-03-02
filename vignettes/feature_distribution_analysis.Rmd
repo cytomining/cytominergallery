@@ -1,0 +1,160 @@
+---
+title: "feature_distribution_analysis"
+output:
+  html_notebook: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(purrr)
+library(readr)
+library(stringr)
+library(tidyr)
+```
+
+
+```{r load_backend}
+
+workspace_dir <- file.path(Sys.getenv("HOME"), "Downloads", "BBBC022_workspace")
+
+batch_id <- "BBBC022_2013"
+
+plate_id <- "20646"
+
+plate_backend <- 
+  file.path(workspace_dir, 
+            paste0("backend/", batch_id, "/", plate_id, "/", plate_id,".sqlite"))
+
+db <- src_sqlite(path = plate_backend)
+
+img <- tbl(db, "Image")
+
+
+```
+
+
+```{r load_metadata}
+barcode_platemap <- 
+  suppressMessages(read_csv(file.path(workspace_dir, paste0("metadata/", batch_id, "/barcode_platemap.csv"))))
+
+metadata <- 
+paste0(
+  file.path(workspace_dir, paste0("metadata/", batch_id,"/platemap/")),
+  barcode_platemap$Plate_Map_Name %>% unique(),
+  ".txt"
+  ) %>% 
+  map_df(function(x) suppressMessages(read_tsv(x))) %>%
+  rename(Plate_Map_Name = plate_map_name) %>%
+  inner_join(barcode_platemap, by = c("Plate_Map_Name")) %>%
+  mutate(Plate = Assay_Plate_Barcode,
+         Well = well_position) %>%
+  mutate(broad_sample = ifelse(is.na(broad_sample), "DMSO", broad_sample))
+
+names(metadata) %<>% str_c("Metadata", ., sep = "_")
+
+if (db_has_table(db$con, table = "metadata")) {
+  db$con %>% db_drop_table(table = "metadata")
+}
+metadata <- dplyr::copy_to(db, metadata)
+
+```
+
+
+```{r sample_cells_from_dmso}
+
+frac_cells_per_image <- .20
+
+images_per_well <- 6
+
+# sample images from DMSO wells
+sampled_images <- 
+  metadata %>%
+  filter(Metadata_broad_sample == "DMSO") %>% 
+  inner_join(img, by = c("Metadata_Plate" = "Image_Metadata_Plate", 
+                         "Metadata_Well" = "Image_Metadata_Well")) %>%
+  select(matches("Metadata_|TableNumber|ImageNumber")) %>%
+  collect() %>%
+  group_by(Metadata_Plate, Metadata_Well) %>%
+  sample_n(images_per_well) %>%
+  ungroup()
+
+if (db_has_table(db$con, table = "sampled_images")) {
+  db$con %>% db_drop_table(table = "sampled_images")
+}  
+
+sampled_images <- dplyr::copy_to(db, sampled_images)
+
+# sample cells from the sampled images
+sampled_objects <-
+  sampled_images %>%
+  inner_join(
+    tbl(db, "Cells") %>% select(TableNumber, ImageNumber, ObjectNumber),
+    by = c("TableNumber", "ImageNumber")) %>%
+  collect() %>%
+  group_by(TableNumber, ImageNumber) %>%
+  sample_frac(frac_cells_per_image) %>%
+  ungroup()
+
+if (db_has_table(db$con, table = "sampled_objects")) {
+  db$con %>% db_drop_table(table = "sampled_objects")
+}  
+
+sampled_objects <- dplyr::copy_to(db, sampled_objects)
+  
+sampled_objects %<>%
+  inner_join(tbl(db, "Cells"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  inner_join(tbl(db, "Cytoplasm"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  inner_join(tbl(db, "Nuclei"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  collect(n = Inf)
+
+```
+
+
+```{r diptest}
+
+diptest_p_values <- 
+  sampled_objects %>%
+  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+  map(function(x) diptest::dip.test(x)[["p.value"]]) %>%
+  as_data_frame() %>%
+  gather(feature, diptest_p_value)
+
+diptest_p_values$diptest_p_value_adjusted <-
+  p.adjust(diptest_p_values$diptest_p_value, method = "BH")
+```
+
+```{r skewness}
+skewnesses <- 
+  sampled_objects %>%
+  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+  map(e1071::skewness) %>%
+  as_data_frame() %>%
+  gather(feature, skewness)
+```
+
+```{r}
+features_statistics <- 
+  inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
+  mutate(is_multimodal = diptest_p_value_adjusted < 0.05) %>%
+  mutate(is_skewed = skewness > 2) %>%
+  mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
+  
+features_statistics %>%
+  group_by(is_skewed) %>%
+  tally() %>% 
+  knitr::kable()
+
+features_statistics %>%
+  group_by(is_multimodal) %>%
+  tally() %>% 
+  knitr::kable()
+```
+
+
