@@ -1,13 +1,17 @@
 ---
-title: "feature_distribution_analysis"
+title: "Feature distribution analysis"
 output:
   html_notebook: default
   html_document: default
 ---
 
+This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 
 ```{r load_libraries, echo=FALSE, warning=FALSE, message=FALSE}
 library(dplyr)
@@ -19,9 +23,31 @@ library(stringr)
 library(tidyr)
 ```
 
+
 ```{r set_seed}
+
 set.seed(42)
+
 ```
+
+Download files
+
+```{sh eval=FALSE}
+mkdir -p ~/Downloads/BBBC022_workspace
+
+cd ~/Downloads/BBBC022_workspace
+
+wget https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/backend_BBBC022_20646.tar.gz
+
+wget https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/metadata_BBBC022.tar.gz
+
+tar xvzf backend_BBBC022_20646.tar.gz
+
+tar xvzf metadata_BBBC022.tar.gz
+
+```
+
+Load database backend
 
 ```{r load_backend}
 
@@ -37,13 +63,12 @@ plate_backend <-
 
 db <- src_sqlite(path = plate_backend)
 
-img <- tbl(db, "Image")
-
-
 ```
 
+Load metadata
 
 ```{r load_metadata}
+
 barcode_platemap <- 
   suppressMessages(read_csv(file.path(workspace_dir, paste0("metadata/", batch_id, "/barcode_platemap.csv"))))
 
@@ -70,9 +95,11 @@ metadata <- dplyr::copy_to(db, metadata)
 ```
 
 
-```{r sample_cells_from_dmso, cache=TRUE}
+Sample cells from DMSO wells
 
-frac_cells_per_image <- .80
+```{r sample_cells_from_dmso}
+
+frac_cells_per_image <- .8
 
 images_per_well <- 6
 
@@ -80,7 +107,7 @@ images_per_well <- 6
 sampled_images <- 
   metadata %>%
   filter(Metadata_broad_sample == "DMSO") %>% 
-  inner_join(img, by = c("Metadata_Plate" = "Image_Metadata_Plate", 
+  inner_join(tbl(db, "Image"), by = c("Metadata_Plate" = "Image_Metadata_Plate", 
                          "Metadata_Well" = "Image_Metadata_Well")) %>%
   select(matches("Metadata_|TableNumber|ImageNumber")) %>%
   collect() %>%
@@ -120,6 +147,8 @@ sampled_objects %<>%
 ```
 
 
+Peform Hartigan's dip test for multimodality.
+
 ```{r diptest}
 
 diptest_p_values <- 
@@ -131,18 +160,28 @@ diptest_p_values <-
 
 diptest_p_values$diptest_p_value_adjusted <-
   p.adjust(diptest_p_values$diptest_p_value, method = "BH")
+
 ```
 
+
+Compute skewness
+
 ```{r skewness}
+
 skewnesses <- 
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   map(e1071::skewness) %>%
   as_data_frame() %>%
   gather(feature, skewness)
+
 ```
 
+
+Collect, summarize and save statistics
+
 ```{r}
+
 features_statistics <- 
   inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value_adjusted < 0.05) %>%
@@ -160,10 +199,10 @@ features_statistics %>%
   knitr::kable(caption = "Feature multimodality summary", digits = 2)
 
 features_statistics %>% 
-  mutate(neg_log_adj_p_value = -log(diptest_p_value_adjusted, base = 10)) %>%
+  mutate(neg_log_p_value_adjusted_dip = -log(diptest_p_value_adjusted, base = 10)) %>%
   filter(diptest_p_value_adjusted < 0.25) %>% 
-  select(feature, neg_log_adj_p_value) %>%
-  arrange(-neg_log_adj_p_value) %>% 
+  select(feature, neg_log_p_value_adjusted_dip) %>%
+  arrange(-neg_log_p_value_adjusted_dip) %>% 
   knitr::kable(caption = "Feature multimodality table", digits = 3)
 
 features_statistics %>% 
@@ -176,6 +215,9 @@ features_statistics %>%
 features_statistics %>% write_csv("feature_statistics.csv")
 
 ```
+
+
+Plot histograms of features and save as PNGs
 
 ```{r plot_histograms}
 
