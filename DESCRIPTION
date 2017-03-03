@@ -9,7 +9,7 @@ Authors@R: as.person(c(
 Description: cytominer workshop vignettes.
 Depends:
     R (>= 3.1.0)
-License: MIT + file LICENSE
+License: file LICENSE
 LazyData: TRUE
 Imports:
     dplyr (>= 0.5.0),
