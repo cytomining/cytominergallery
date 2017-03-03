@@ -1,8 +1,8 @@
 ---
 title: "Feature distribution analysis"
 output:
-  html_notebook: default
   html_document: default
+  html_notebook: default
 ---
 
 This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG.
