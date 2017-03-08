@@ -5,3 +5,6 @@ inst/doc
 .Rprofile
 cytominerworkshop.Rproj
 packrat
+vignettes/feature_histograms
+*.nb.html
+*.Rproj
