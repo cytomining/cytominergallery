@@ -21,6 +21,7 @@ library(purrr)
 library(readr)
 library(stringr)
 library(tidyr)
+library(tibble)
 ```
 
 
@@ -178,12 +179,35 @@ skewnesses <-
 ```
 
 
+
+Compute feature range
+
+```{r feature range}
+
+find.feat.range <- function(x) {
+  return(c(min = min(x), 
+           q01 = quantile(x, 0.01) %>% as.vector(),
+           max = max(x),
+           q99 = quantile(x, 0.99) %>% as.vector()))
+}
+
+feat.range <- 
+  sampled_objects %>%
+  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+  apply(., 2, find.feat.range) %>% t %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "feature") 
+  
+
+```
+
 Collect, summarize and save statistics
 
 ```{r}
 
 features_statistics <- 
   inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
+  inner_join(., feat.range, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value_adjusted < 0.05) %>%
   mutate(is_skewed = skewness > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
@@ -211,6 +235,10 @@ features_statistics %>%
   filter(abs(skewness) > 2) %>% 
   arrange(-abs(skewness)) %>% 
   knitr::kable(caption = "Feature skewness table", digits = 3)
+
+features_statistics %>% 
+  select(feature, min, q01, q99, max) %>%
+  knitr::kable(caption = "Feature range table", digits = 3)
 
 features_statistics %>% write_csv("feature_statistics.csv")
 
