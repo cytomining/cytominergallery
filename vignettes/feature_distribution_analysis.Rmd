@@ -247,10 +247,10 @@ features_statistics %>% write_csv("feature_statistics.csv")
 
 Plot histograms of features and save as PNGs
 
-```{r plot_histograms}
+```{r plot_densities}
 
-if(!dir.exists("feature_histograms")) {
-  dir.create("feature_histograms")  
+if(!dir.exists("feature_densities")) {
+  dir.create("feature_densities")  
 }
 
 feature_names <- names(sampled_objects) %>% 
@@ -258,10 +258,10 @@ feature_names <- names(sampled_objects) %>%
 
 for (feature_name in feature_names) {
   g <- ggplot(sampled_objects, aes_string(feature_name)) + 
-    geom_histogram(bins = 50)
+    stat_density(adjust = 0.8, alpha = 0.5)
   
   ggsave(plot = g, 
-         filename = sprintf("feature_histograms/%s.png", feature_name), 
+         filename = sprintf("feature_densities/%s.png", feature_name), 
          width = 5, height = 5)
 }
 
