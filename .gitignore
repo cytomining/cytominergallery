@@ -5,6 +5,7 @@ inst/doc
 .Rprofile
 cytominerworkshop.Rproj
 packrat
-vignettes/feature_histograms
 *.nb.html
 *.Rproj
+notebooks/feature_statistics.csv
+notebooks/feature_densities
