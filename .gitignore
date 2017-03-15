@@ -5,7 +5,7 @@ inst/doc
 .Rprofile
 cytominerworkshop.Rproj
 packrat
-notebooks/feature_densities/*
+notebooks/feature_densities
 notebooks/*.csv
 cytominergallery.Rproj
 *.nb.html
