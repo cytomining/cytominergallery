@@ -20,6 +20,7 @@ You may need to do run that again in order to build the vignettes correctly (see
 devtools::install_github("cytomining/cytominergallery", dependencies = TRUE, build_vignettes = TRUE, force = TRUE)
 ```
 
+Occasionally, the `Suggests` dependencies [may not get installed](https://github.com/hadley/devtools/issues/1370), depending on your system, so you'd need to install those explicitly.
 Browse vignettes (launches in default browser):
 ```R
 browseVignettes()
