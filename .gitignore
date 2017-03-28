@@ -3,7 +3,7 @@ packrat/lib*/
 inst/doc
 .Rhistory
 .Rprofile
-cytominerworkshop.Rproj
+cytominergallery.Rproj
 packrat
 notebooks/feature_densities
 notebooks/*.csv
