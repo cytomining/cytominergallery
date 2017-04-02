@@ -43,11 +43,26 @@ double custom_covar(double* x1, double* x2, double mn1, double mn2, int size) {
   }
 }
 
+//' custom_covar
+//' 
+//' @param x1 ...
+//' @param x2 ...
+//' 
+//' @export
+//' 
 // [[Rcpp::export]]
 double custom_covar(NumericVector x1, NumericVector x2) { 
   return(custom_covar(&x1[0], &x2[0], x1.size()));
+  
 }
 
+//' combine_covs
+//' 
+//' @param mn_covs ...
+//' @param ns ...
+//' 
+//' @export
+//' 
 // [[Rcpp::export]]
 NumericMatrix custom_multi_covar(NumericMatrix s) { 
   NumericMatrix res(s.ncol(), s.ncol());
@@ -81,6 +96,16 @@ NumericMatrix custom_multi_covar(NumericMatrix s) {
   return res;
 }
 
+//' combine_covs_base
+//' 
+//' @param mn_covs1 ...
+//' @param mn_covs2 ...
+//' @param ns1 ...
+//' @param ns2 ...
+//' 
+//' @export
+//' 
+// [[Rcpp::export]]
 NumericMatrix combine_covs_base(NumericMatrix mn_covs1, NumericMatrix mn_covs2, int ns1, int ns2) {
   NumericMatrix res(mn_covs1.nrow(), mn_covs1.nrow()-1);
   for (int i = 1 ; i < mn_covs1.nrow() ; i++) {
@@ -94,6 +119,13 @@ NumericMatrix combine_covs_base(NumericMatrix mn_covs1, NumericMatrix mn_covs2, 
   return res;
 }
 
+//' combine_covs
+//' 
+//' @param mn_covs ...
+//' @param ns ...
+//' 
+//' @export
+//' 
 // [[Rcpp::export]]
 NumericMatrix combine_covs(NumericMatrix mn_covs, NumericVector ns) {
   if (ns.size() == 2) {

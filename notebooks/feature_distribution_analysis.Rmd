@@ -266,7 +266,7 @@ for (feature_name in feature_names) {
 
 #for n.splits <- 32 and n.cores <- 32 on m4.16xlarge AWS instances here is the benchmark for the paralle cor and standard R cor
 
-#sampled_objects %>% select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>% parallel.cor(., n.splits = n.splits, n.cores = n.cores, cov.fun = "custom_multi_covar")
+#sampled_objects %>% select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>% cytominergallery::parallel_cor(., n.splits = n.splits, n.cores = n.cores, cov.fun = "custom_multi_covar")
 #  replications elapsed relative user.self sys.self user.child sys.child
 #            3   7.356        1     3.768    1.996     70.176     6.253
                                                                          test
@@ -276,16 +276,16 @@ for (feature_name in feature_names) {
 
 ```{r report_correlations}
 
-source("notebooks/custom_covar.R")
-
-n.splits <- 2
-n.cores <- 4
-n.top.cor <- 5          # how many top correlated feature
-                        # to each given feature is shown
+splits <- 2
+cores <- 4
+# how many top correlated feature to each given feature is shown
+n.top.cor <- 5          
 
 sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>% 
-  parallel.cor(., n.splits = n.splits, n.cores = n.cores, cov.fun = "custom_multi_covar") %>% 
+  cytominergallery::parallel_cor(splits = splits, 
+                                 cores = cores, 
+                                 cov_fun = "custom_multi_covar") %>% 
   reshape2::melt(value.name = "cor.") %>%
   mutate(feature.1 = Var1, feature.2 = Var2) %>%
   select(-Var1, -Var2) %>%
@@ -298,10 +298,9 @@ sampled_objects %>%
 
 rbenchmark::benchmark(sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  parallel.cor(., n.splits = n.splits, n.cores = n.cores, cov.fun = "custom_multi_covar"), replications = 3) %>% print
-
-rbenchmark::benchmark(sampled_objects %>%
-  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  cor, replications = 3) %>% print
+  cytominergallery::parallel_cor(splits = splits, 
+                                 cores = cores, 
+                                 cov_fun = "custom_multi_covar"), replications = 3) %>% 
+  print
 
 ```
