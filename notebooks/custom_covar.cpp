@@ -43,7 +43,6 @@ double custom_covar(double* x1, double* x2, double mn1, double mn2, int size) {
   }
 }
 
-
 // [[Rcpp::export]]
 double custom_covar(NumericVector x1, NumericVector x2) { 
   return(custom_covar(&x1[0], &x2[0], x1.size()));
@@ -80,12 +79,6 @@ NumericMatrix custom_multi_covar(NumericMatrix s) {
   }
   delete[] Means;
   return res;
-}
-
-// [[Rcpp::export]]
-double distributed_covar_base(double mn1_A, double mn1_B, double mn2_A, double mn2_B, double covar_A, double covar_B, int n_A, int n_B) {  
-  double cx = covar_A + covar_B + (mn1_A - mn1_B) * (mn2_A - mn2_B) * (n_A * n_B)/(n_A + n_B);
-  return cx;
 }
 
 NumericMatrix combine_covs_base(NumericMatrix mn_covs1, NumericMatrix mn_covs2, int ns1, int ns2) {

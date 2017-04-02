@@ -1,26 +1,19 @@
 library(Rcpp)
 library(foreach)
 library(doMC)
-library(rbenchmark)
+library(dplyr)
+
+# loading the cpp functions used for numerically stable cov. calculation and 
+# also "reduce" operation for the parallel computation of cov.
 sourceCpp("notebooks/custom_covar.cpp")
 
-x <- matrix(runif(n = 1000 * 1000), nrow = 1000, ncol = 1000)
-
-rbenchmark::benchmark(custom_multi_covar(x), replications = 10)
-rbenchmark::benchmark(cov(x), replications = 10)
-
-a <- custom_multi_covar(x)
-b <- cov(x)
-
-err.std.cov.against.stable.cov <- max(abs((b - a)/a))
-
-print(err.std.cov.against.stable.cov)
-
-##########
-
-x <- matrix(runif(n = 1000 * 1000), nrow = 1000, ncol = 1000)
-
-distributed.covar <- function(x, n.splits = 16, n.cores = 2) {
+# parallel cov. function
+# n.splits (should be of 2^n form) shows the number of splits of data that we want to combine
+# n.cores is the number of cores that will be used for the parallel computation
+# cov.fun is the base cov. function used on each split. custom_multi_covar is 
+#         the 2-pass stable algorithm implemented in custom_covar.cpp
+parallel.cov <- function(x, n.splits = 2, n.cores = 2, cov.fun = "custom_multi_covar") {
+  x <- x %>% as.matrix()
   n <- NROW(x)
   doMC::registerDoMC(cores = n.cores)
   ns <- rep(round(n/n.splits), n.splits - 1)
@@ -35,22 +28,27 @@ distributed.covar <- function(x, n.splits = 16, n.cores = 2) {
     k <- sum(ns[1:j])
     
     mn <- apply(x[i:k,], 2, mean)
-    s <- custom_multi_covar(x[i:k,])
+    s <- do.call(cov.fun, list(x[i:k,]))
     rbind(mn, s)
   }
   
   u <- do.call(cbind, res)
-  combine_covs(u, ns)
+  mn.cr <- combine_covs(u, ns)
+  res <- mn.cr[2:NROW(mn.cr), ]
+  rownames(res) <- colnames(x)
+  colnames(res) <- colnames(x)
+  return(res)
 }
 
-rbenchmark::benchmark(distributed.covar(x, n.splits = 4, n.cores = 4), replications = 3)
-rbenchmark::benchmark(cov(x), replications = 3)
-
-a <- distributed.covar(x, n.splits = 4, n.cores = 4)
-a <- a[2:NROW(a), ]
-b <- cov(x)
-
-err.std.cov.against.stable.cov <- max(abs((b - a)/a))
-
-print(err.std.cov.against.stable.cov)
-
+# parallel cor. function
+# arguments are set similar to parallel.cov
+parallel.cor <- function(x, n.splits = 2, n.cores = 2, cov.fun = "custom_multi_covar") {
+  cov.mat <- parallel.cov(x, n.splits = n.splits, n.cores = n.cores, cov.fun = cov.fun)
+  nrm <- diag(diag(cov.mat)^-0.5)
+  cov.mat <- cov.mat %>% as.matrix()
+  nrm <- nrm %>% as.matrix()
+  res <- nrm %*% cov.mat %*% nrm
+  rownames(res) <- colnames(x)
+  colnames(res) <- colnames(x)
+  return(res)
+}
