@@ -14,8 +14,7 @@ custom_covar <- function(x1, x2) {
 
 #' combine_covs
 #' 
-#' @param mn_covs ...
-#' @param ns ...
+#' @param s ...
 #' 
 #' @export
 #' 

@@ -7,9 +7,7 @@
 custom_multi_covar(s)
 }
 \arguments{
-\item{mn_covs}{...}
-
-\item{ns}{...}
+\item{s}{...}
 }
 \description{
 combine_covs

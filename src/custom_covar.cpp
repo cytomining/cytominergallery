@@ -58,8 +58,7 @@ double custom_covar(NumericVector x1, NumericVector x2) {
 
 //' combine_covs
 //' 
-//' @param mn_covs ...
-//' @param ns ...
+//' @param s ...
 //' 
 //' @export
 //' 
