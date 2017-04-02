@@ -23,6 +23,8 @@ parallel_cov <- function(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar
 
   ns <- c(ns, n - sum(ns))
 
+  j <- 0 # to avoid warning: no visible binding for global variable ‘j’
+  
   result <- foreach::foreach(j = 1:length(ns)) %dopar% {
     if (j == 1) {
       i <- 1
