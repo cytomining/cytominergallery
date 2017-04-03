@@ -16,7 +16,9 @@ Imports:
     doParallel (>= 1.0.10),
     foreach (>= 1.4.3),
     magrittr (>= 1.5),
-    tibble (>= 1.2)
+    tibble (>= 1.2),
+    Rcpp,
+    rbenchmark
 Suggests:
     caret (>= 6.0-71),
     cytominer,
@@ -37,4 +39,5 @@ Remotes: CellProfiler/cytominer
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominergallery
 BugReports: https://github.com/shntnu/cytominergallery/issues
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
+LinkingTo: Rcpp
