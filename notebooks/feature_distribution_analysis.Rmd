@@ -297,7 +297,7 @@ Benchmarking
 
 splits <- 4
 cores <- 4
-sample_fraction <- 1/20
+sample_fraction <- 1/8
 
 rbenchmark::benchmark(
   sampled_objects %>%
@@ -318,7 +318,8 @@ rbenchmark::benchmark(
   sampled_objects %>%
     sample_frac(sample_fraction) %>%
     select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-    cor
+    cor, 
+  replications = 3
   ) %>%
   print
 
