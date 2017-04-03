@@ -11,7 +11,7 @@
 #' @importFrom magrittr %<>%
 #' @importFrom foreach %dopar%
 #'
-parallel_cov <- function(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar") {
+parallel_cov <- function(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar") {
 
   x <- as.matrix(x)
 
@@ -45,7 +45,7 @@ parallel_cov <- function(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar
 
   u <- do.call(cbind, result)
 
-  mn.cr <- combine_covs(u, ns)
+  mn.cr <- combine_cov_estimates(u, ns)
 
   result <- mn.cr[2:NROW(mn.cr), ]
 

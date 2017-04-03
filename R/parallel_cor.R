@@ -11,7 +11,7 @@
 #' @importFrom magrittr %<>%
 #' @importFrom foreach %dopar%
 #'
-parallel_cor <- function(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar") {
+parallel_cor <- function(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar") {
   
   cov_mat <- parallel_cov(x, splits = splits, cores = cores, cov_fun = cov_fun)
   
