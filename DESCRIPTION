@@ -16,10 +16,11 @@ Imports:
     doParallel (>= 1.0.10),
     foreach (>= 1.4.3),
     magrittr (>= 1.5),
-    tibble (>= 1.2),
+    outliers (>= 0.14),
     rbenchmark (>= 1.0.0),
     Rcpp (>=0.12.9.4),
-    robustbase (>= 0.92-7)
+    robustbase (>= 0.92-7),
+    tibble (>= 1.2)
 Suggests:
     caret (>= 6.0-71),
     cytominer,
