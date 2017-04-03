@@ -22,6 +22,7 @@ library(readr)
 library(stringr)
 library(tidyr)
 library(tibble)
+library(outliers)
 ```
 
 
@@ -152,15 +153,25 @@ sampled_objects %<>%
 
 ```{r diptest}
 
+remove_outliers <- function(x) {
+  upper.end.outlier <- outliers::scores(x, type = "iqr", lim = 1.5)  
+  lower.end.outlier <- outliers::scores(-x, type = "iqr", lim = 1.5)  
+  x[which(!(upper.end.outlier | lower.end.outlier))]
+}
+
+robust_dip_test <- function(x) {
+  diptest::dip.test(remove_outliers(x))[["p.value"]]
+}
+
 diptest_p_values <- 
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  map(function(x) diptest::dip.test(x)[["p.value"]]) %>%
+  map(robust_dip_test) %>%
   as_data_frame() %>%
   gather(feature, diptest_p_value)
 
 diptest_p_values$diptest_p_value_adjusted <-
-  p.adjust(diptest_p_values$diptest_p_value, method = "BH")
+  p.adjust(diptest_p_values$diptest_p_value, method = "hochberg")
 
 ```
 
@@ -202,7 +213,7 @@ feature_ranges <-
 features_statistics <- 
   inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
   inner_join(feature_ranges, by = c("feature")) %>%
-  mutate(is_multimodal = diptest_p_value_adjusted < 0.05) %>%
+  mutate(is_multimodal = diptest_p_value < 0.1) %>%
   mutate(is_skewed = skewness > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
   
@@ -217,10 +228,10 @@ features_statistics %>%
   knitr::kable(caption = "Feature multimodality summary", digits = 2)
 
 features_statistics %>% 
-  mutate(neg_log_p_value_adjusted_dip = -log(diptest_p_value_adjusted, base = 10)) %>%
-  filter(diptest_p_value_adjusted < 0.25) %>% 
-  select(feature, neg_log_p_value_adjusted_dip) %>%
-  arrange(-neg_log_p_value_adjusted_dip) %>% 
+  mutate(neg_log_p_value_dip = -log(diptest_p_value, base = 10)) %>%
+  filter(diptest_p_value < 0.10) %>% 
+  select(feature, neg_log_p_value_dip) %>%
+  arrange(-neg_log_p_value_dip) %>% 
   knitr::kable(caption = "Feature multimodality table", digits = 3)
 
 features_statistics %>% 
