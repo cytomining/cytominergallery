@@ -5,7 +5,8 @@ output:
   html_document: default
 ---
 
-This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG.
+This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG. Correlations between 
+features are also reported.
 
 
 ```{r setup, include=FALSE}
@@ -53,6 +54,7 @@ tar xvzf metadata_BBBC022.tar.gz
 
 ```
 
+
 ## Load database backend
 
 ```{r load_backend}
@@ -70,6 +72,7 @@ plate_backend <-
 db <- src_sqlite(path = plate_backend)
 
 ```
+
 
 ## Load metadata
 
@@ -152,14 +155,15 @@ sampled_objects %<>%
 
 ```
 
-## Peform Hartigan's dip test for multimodality.
+
+## Peform Hartigan's dip test for multimodality
 
 ```{r diptest}
 
 remove_outliers <- function(x) {
-  upper.end.outlier <- outliers::scores(x, type = "iqr", lim = 1.5)  
-  lower.end.outlier <- outliers::scores(-x, type = "iqr", lim = 1.5)  
-  x[which(!(upper.end.outlier | lower.end.outlier))]
+  upper_end_outlier <- outliers::scores(x, type = "iqr", lim = 1.5)  
+  lower_end_outlier <- outliers::scores(-x, type = "iqr", lim = 1.5)  
+  x[which(!(upper_end_outlier | lower_end_outlier))]
 }
 
 robust_dip_test <- function(x) {
@@ -192,6 +196,7 @@ skewnesses <-
 
 ```
 
+
 ## Compute feature ranges
 
 ```{r feature_ranges}
@@ -209,7 +214,8 @@ feature_ranges <-
 
 ```
 
-# Find thresholds for outlier detection
+
+## Find thresholds for outlier detection
 
 ```{r find_outlier_thresholds}
 
@@ -224,7 +230,8 @@ feature_outlier_ranges <-
 
 ```
 
-# Collect, summarize and save statistics
+
+## Collect, summarize and save statistics
 
 ```{r features_statistics}
 
@@ -250,31 +257,32 @@ features_statistics %>%
   mutate(neg_log_p_value_dip = -log(diptest_p_value, base = 10)) %>%
   filter(diptest_p_value < 0.10) %>% 
   select(feature, neg_log_p_value_dip) %>%
-  arrange(-neg_log_p_value_dip) %>% 
-
+  arrange(desc(neg_log_p_value_dip)) %>% 
   knitr::kable(caption = "Feature multimodality table", digits = 3)
 
 features_statistics %>%
   select(feature, skewness) %>%
   na.omit() %>%
-  arrange(-abs(skewness)) %>% 
+  arrange(desc(abs(skewness))) %>% 
   knitr::kable(caption = "Feature skewness table", digits = 3)
 
 features_statistics %>%
   select(feature, min, q01, q99, max) %>%
   knitr::kable(caption = "Feature range table", digits = 3)
 
-features_statistics %>% 
+feature_outlier_ranges %>% 
   select(feature, lower_outlier_thr, upper_outlier_thr) %>%
   knitr::kable(caption = "Feature outlier threshold table", digits = 3)
 
 features_statistics %>% write_csv("feature_statistics.csv")
 
+feature_outlier_ranges %>% write_csv("feature_outlier_ranges.csv")
 ```
 
-# Plot densities of features
 
-```{r plot_densities}
+## Plot densities of features
+
+```{r plot_densities, eval=TRUE}
 
 if(!dir.exists("feature_densities")) {
   dir.create("feature_densities")
@@ -294,7 +302,8 @@ for (feature_name in feature_names) {
 
 ```
 
-Report the correlations using a distributed version of the correlation function
+
+## Report the correlations using a distributed version of the correlation function
 
 ```{r report_correlations}
 
@@ -303,7 +312,7 @@ cores <- 4
 # how many top correlated feature to each given feature is shown
 n_top_cor <- 5
 
-top_correlations_per_feature <-
+correlations <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   parallel_cor(splits = splits,
@@ -314,16 +323,22 @@ top_correlations_per_feature <-
   gather(feature_2, cor, -feature_1) %>%
   filter(feature_1 != feature_2) %>%
   na.omit %>%
-  arrange(desc(abs(cor))) %>%
+  arrange(desc(abs(cor))) 
+
+top_correlations_per_feature <-
+  correlations %>%
   group_by(feature_1) %>%
   slice(1:n_top_cor) %>%
   ungroup 
 
-top_correlations_per_feature
+top_correlations_per_feature %>%
+  knitr::kable(caption = "Correlations between features", digits = 3)
+
+correlations %>% write_csv("correlations.csv")
 
 ```
 
-Benchmarking
+## Benchmark `cor` and `parallel_cor`
 
 ```{r, eval=T}
 
