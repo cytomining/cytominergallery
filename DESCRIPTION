@@ -17,7 +17,9 @@ Imports:
     foreach (>= 1.4.3),
     magrittr (>= 1.5),
     tibble (>= 1.2),
-    robustbase
+    rbenchmark (>= 1.0.0),
+    Rcpp (>=0.12.9.4),
+    robustbase (>= 0.92-7)
 Suggests:
     caret (>= 6.0-71),
     cytominer,
@@ -38,4 +40,5 @@ Remotes: CellProfiler/cytominer
 VignetteBuilder: knitr
 URL: https://github.com/shntnu/cytominergallery
 BugReports: https://github.com/shntnu/cytominergallery/issues
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
+LinkingTo: Rcpp
