@@ -26,4 +26,3 @@ data.frame of variable quality measurements
 \description{
 Measure variable quality based on replicate correlation
 }
-
