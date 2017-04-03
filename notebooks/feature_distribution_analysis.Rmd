@@ -14,15 +14,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r load_libraries, echo=FALSE, warning=FALSE, message=FALSE}
+library(cytominergallery)
 library(dplyr)
 library(ggplot2)
 library(magrittr)
+library(outliers)
 library(purrr)
 library(readr)
 library(stringr)
 library(tidyr)
 library(tibble)
-library(outliers)
+library(reshape2)
+library(rbenchmark)
+library(robustbase)
 ```
 
 
@@ -59,8 +63,8 @@ batch_id <- "BBBC022_2013"
 
 plate_id <- "20646"
 
-plate_backend <- 
-  file.path(workspace_dir, 
+plate_backend <-
+  file.path(workspace_dir,
             paste0("backend/", batch_id, "/", plate_id, "/", plate_id,".sqlite"))
 
 db <- src_sqlite(path = plate_backend)
@@ -71,15 +75,15 @@ db <- src_sqlite(path = plate_backend)
 
 ```{r load_metadata}
 
-barcode_platemap <- 
+barcode_platemap <-
   suppressMessages(read_csv(file.path(workspace_dir, paste0("metadata/", batch_id, "/barcode_platemap.csv"))))
 
-metadata <- 
+metadata <-
 paste0(
   file.path(workspace_dir, paste0("metadata/", batch_id,"/platemap/")),
   barcode_platemap$Plate_Map_Name %>% unique(),
   ".txt"
-  ) %>% 
+  ) %>%
   map_df(function(x) suppressMessages(read_tsv(x))) %>%
   rename(Plate_Map_Name = plate_map_name) %>%
   inner_join(barcode_platemap, by = c("Plate_Map_Name")) %>%
@@ -106,10 +110,10 @@ frac_cells_per_image <- .8
 images_per_well <- 6
 
 # sample images from DMSO wells
-sampled_images <- 
+sampled_images <-
   metadata %>%
-  filter(Metadata_broad_sample == "DMSO") %>% 
-  inner_join(tbl(db, "Image"), by = c("Metadata_Plate" = "Image_Metadata_Plate", 
+  filter(Metadata_broad_sample == "DMSO") %>%
+  inner_join(tbl(db, "Image"), by = c("Metadata_Plate" = "Image_Metadata_Plate",
                          "Metadata_Well" = "Image_Metadata_Well")) %>%
   select(matches("Metadata_|TableNumber|ImageNumber")) %>%
   collect() %>%
@@ -119,7 +123,7 @@ sampled_images <-
 
 if (db_has_table(db$con, table = "sampled_images")) {
   db$con %>% db_drop_table(table = "sampled_images")
-}  
+}
 
 sampled_images <- dplyr::copy_to(db, sampled_images)
 
@@ -136,10 +140,10 @@ sampled_objects <-
 
 if (db_has_table(db$con, table = "sampled_objects")) {
   db$con %>% db_drop_table(table = "sampled_objects")
-}  
+}
 
 sampled_objects <- dplyr::copy_to(db, sampled_objects)
-  
+
 sampled_objects %<>%
   inner_join(tbl(db, "Cells"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
   inner_join(tbl(db, "Cytoplasm"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
@@ -147,7 +151,6 @@ sampled_objects %<>%
   collect(n = Inf)
 
 ```
-
 
 ## Peform Hartigan's dip test for multimodality.
 
@@ -180,10 +183,10 @@ diptest_p_values$diptest_p_value_adjusted <-
 
 ```{r skewness}
 
-skewnesses <- 
+skewnesses <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  map(e1071::skewness) %>%
+  map(robustbase::mc) %>%
   as_data_frame() %>%
   gather(feature, skewness)
 
@@ -193,12 +196,12 @@ skewnesses <-
 
 ```{r feature_ranges}
 
-feature_ranges <- 
+feature_ranges <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   gather(feature, value) %>%
   group_by(feature) %>%
-  summarise_at(vars(value), 
+  summarise_at(vars(value),
                funs(min = min(., na.rm = TRUE),
                     q01 = quantile(., probs = 0.01, na.rm = TRUE),
                     q99 = quantile(., probs = 0.99, na.rm = TRUE),
@@ -210,21 +213,21 @@ feature_ranges <-
 
 ```{r features_statistics}
 
-features_statistics <- 
+features_statistics <-
   inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
   inner_join(feature_ranges, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value < 0.1) %>%
   mutate(is_skewed = skewness > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
-  
+
 features_statistics %>%
   group_by(is_skewed) %>%
-  tally() %>% 
+  tally() %>%
   knitr::kable(caption = "Feature skewness summary", digits = 2)
 
 features_statistics %>%
   group_by(is_multimodal) %>%
-  tally() %>% 
+  tally() %>%
   knitr::kable(caption = "Feature multimodality summary", digits = 2)
 
 features_statistics %>% 
@@ -232,16 +235,16 @@ features_statistics %>%
   filter(diptest_p_value < 0.10) %>% 
   select(feature, neg_log_p_value_dip) %>%
   arrange(-neg_log_p_value_dip) %>% 
+
   knitr::kable(caption = "Feature multimodality table", digits = 3)
 
-features_statistics %>% 
+features_statistics %>%
   select(feature, skewness) %>%
   na.omit() %>%
-  filter(abs(skewness) > 2) %>% 
   arrange(-abs(skewness)) %>% 
   knitr::kable(caption = "Feature skewness table", digits = 3)
 
-features_statistics %>% 
+features_statistics %>%
   select(feature, min, q01, q99, max) %>%
   knitr::kable(caption = "Feature range table", digits = 3)
 
@@ -254,20 +257,87 @@ features_statistics %>% write_csv("feature_statistics.csv")
 ```{r plot_densities}
 
 if(!dir.exists("feature_densities")) {
-  dir.create("feature_densities")  
+  dir.create("feature_densities")
 }
 
-feature_names <- names(sampled_objects) %>% 
+feature_names <- names(sampled_objects) %>%
   str_subset("Cells_|Cytoplasm_|Nuclei_")
 
 for (feature_name in feature_names) {
-  g <- ggplot(sampled_objects, aes_string(feature_name)) + 
+  g <- ggplot(sampled_objects, aes_string(feature_name)) +
     stat_density(adjust = 0.8, alpha = 0.5)
-  
-  ggsave(plot = g, 
-         filename = sprintf("feature_densities/%s.png", feature_name), 
+
+  ggsave(plot = g,
+         filename = sprintf("feature_densities/%s.png", feature_name),
          width = 5, height = 5)
 }
 
 ```
 
+Report the correlations using a distributed version of the correlation function
+
+```{r report_correlations}
+
+splits <- 2
+cores <- 4
+# how many top correlated feature to each given feature is shown
+n_top_cor <- 5
+
+top_correlations_per_feature <-
+  sampled_objects %>%
+  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+  parallel_cor(splits = splits,
+               cores = cores,
+               cov_fun = "two_pass_multi_covar") %>% 
+  as.data.frame %>% 
+  rownames_to_column("feature_1") %>% 
+  gather(feature_2, cor, -feature_1) %>%
+  filter(feature_1 != feature_2) %>%
+  na.omit %>%
+  arrange(desc(abs(cor))) %>%
+  group_by(feature_1) %>%
+  slice(1:n_top_cor) %>%
+  ungroup 
+
+top_correlations_per_feature
+
+```
+
+Benchmarking
+
+```{r, eval=FALSE}
+
+splits <- 4
+cores <- 4
+sample_fraction <- 1/8
+
+rbenchmark::benchmark(
+  sampled_objects %>%
+    select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+    sample_frac(sample_fraction) %>%
+    parallel_cor(splits = splits,
+                 cores = cores,
+                 cov_fun = "two_pass_multi_covar"), replications = 3) %>%
+  print
+
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# on an `m4.16xlarge` AWS instance:
+#>  replications elapsed relative user.self sys.self user.child sys.child
+#            3   7.356        1     3.768    1.996     70.176     6.253
+
+
+rbenchmark::benchmark(
+  sampled_objects %>%
+    sample_frac(sample_fraction) %>%
+    select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+    cor, 
+  replications = 3
+  ) %>%
+  print
+
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# on an `m4.16xlarge` AWS instance:
+#>  replications elapsed relative user.self sys.self user.child sys.child
+#>            3   47.54        1     47.35    0.175          0         0
+
+```
