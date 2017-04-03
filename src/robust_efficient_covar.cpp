@@ -2,7 +2,7 @@
 
 using namespace Rcpp;
 
-double custom_covar(double* x1, double* x2, int size) { 
+double online_covar(double* x1, double* x2, int size) { 
   int n = 0;
   double mn1 = 0;
   double mn2 = 0;
@@ -26,7 +26,7 @@ double custom_covar(double* x1, double* x2, int size) {
   }
 }
 
-double custom_covar(double* x1, double* x2, double mn1, double mn2, int size) { 
+double two_pass_covar(double* x1, double* x2, double mn1, double mn2, int size) { 
   int n = size;
   double M12 = 0;
   
@@ -43,27 +43,40 @@ double custom_covar(double* x1, double* x2, double mn1, double mn2, int size) {
   }
 }
 
-//' custom_covar
+NumericMatrix combine_covs_base(NumericMatrix mn_covs1, NumericMatrix mn_covs2, int ns1, int ns2) {
+  NumericMatrix res(mn_covs1.nrow(), mn_covs1.nrow()-1);
+  for (int i = 1 ; i < mn_covs1.nrow() ; i++) {
+    res(0, i - 1) = (mn_covs1(0, i - 1) * ns1 + mn_covs2(0, i - 1) * ns2)/(ns1 + ns2);
+    for (int j = 0 ; j < mn_covs1.nrow() - 1 ; j++) {
+      double cx = ((ns1-1) * mn_covs1(i, j) + (ns2-1) * mn_covs2(i, j) + (mn_covs1(0, i-1) - mn_covs2(0, i - 1)) * (mn_covs1(0, j) - mn_covs2(0, j)) * (ns1) * (ns2)/(ns1 + ns2))/(ns1 + ns2- 1);
+      res(i, j) = cx;
+    }
+  }
+  
+  return res;
+}
+
+//' online_covar
 //' 
-//' @param x1 ...
-//' @param x2 ...
+//' @param x1 a numeric vector containing samples of the first random variable
+//' @param x2 a numeric vector containing corresponding samples of the second random variable
 //' 
 //' @export
 //' 
 // [[Rcpp::export]]
-double custom_covar(NumericVector x1, NumericVector x2) { 
-  return(custom_covar(&x1[0], &x2[0], x1.size()));
+double online_covar(NumericVector x1, NumericVector x2) { 
+  return(online_covar(&x1[0], &x2[0], x1.size()));
   
 }
 
-//' combine_covs
+//' two_pass_multi_covar
 //' 
-//' @param s ...
+//' @param s a data matrix whose column covariances are sought 
 //' 
 //' @export
 //' 
 // [[Rcpp::export]]
-NumericMatrix custom_multi_covar(NumericMatrix s) { 
+NumericMatrix two_pass_multi_covar(NumericMatrix s) { 
   NumericMatrix res(s.ncol(), s.ncol());
   double* Means = new double[s.ncol()];
   double* sx = &s[0];
@@ -95,38 +108,18 @@ NumericMatrix custom_multi_covar(NumericMatrix s) {
   return res;
 }
 
-//' combine_covs_base
+//' combine_cov_estimates
 //' 
-//' @param mn_covs1 ...
-//' @param mn_covs2 ...
-//' @param ns1 ...
-//' @param ns2 ...
-//' 
-//' @export
-//' 
-// [[Rcpp::export]]
-NumericMatrix combine_covs_base(NumericMatrix mn_covs1, NumericMatrix mn_covs2, int ns1, int ns2) {
-  NumericMatrix res(mn_covs1.nrow(), mn_covs1.nrow()-1);
-  for (int i = 1 ; i < mn_covs1.nrow() ; i++) {
-    res(0, i - 1) = (mn_covs1(0, i - 1) * ns1 + mn_covs2(0, i - 1) * ns2)/(ns1 + ns2);
-    for (int j = 0 ; j < mn_covs1.nrow() - 1 ; j++) {
-      double cx = ((ns1-1) * mn_covs1(i, j) + (ns2-1) * mn_covs2(i, j) + (mn_covs1(0, i-1) - mn_covs2(0, i - 1)) * (mn_covs1(0, j) - mn_covs2(0, j)) * (ns1) * (ns2)/(ns1 + ns2))/(ns1 + ns2- 1);
-      res(i, j) = cx;
-    }
-  }
-  
-  return res;
-}
-
-//' combine_covs
-//' 
-//' @param mn_covs ...
-//' @param ns ...
+//' @param mn_covs the matrix which contains estimated means and covariance for each batch of data. 
+//'         For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and 
+//'         rest of the rows being the covariance matrices. Covariance matrices were concatenated column-wise
+//'         resulting in n.k columns. 
+//' @param ns a vector containing number of samples in each batch of data 
 //' 
 //' @export
 //' 
 // [[Rcpp::export]]
-NumericMatrix combine_covs(NumericMatrix mn_covs, NumericVector ns) {
+NumericMatrix combine_cov_estimates(NumericMatrix mn_covs, NumericVector ns) {
   if (ns.size() == 2) {
     return combine_covs_base(mn_covs(_,Range(0, mn_covs.ncol()/2 - 1)), mn_covs(_,Range(mn_covs.ncol()/2, mn_covs.ncol()-1)), ns[0], ns[1]);
   } else {
@@ -142,8 +135,8 @@ NumericMatrix combine_covs(NumericMatrix mn_covs, NumericVector ns) {
       ns_right[i - ns.size()/2] = ns[i];
     }
     
-    NumericMatrix res_left = combine_covs(c_left, ns_left);
-    NumericMatrix res_right = combine_covs(c_right, ns_right);
+    NumericMatrix res_left = combine_cov_estimates(c_left, ns_left);
+    NumericMatrix res_right = combine_cov_estimates(c_right, ns_right);
     int ns_left_sum = 0;
     for (int i = 0 ; i < ns_left.size() ; i++) {
       ns_left_sum += ns_left[i];
