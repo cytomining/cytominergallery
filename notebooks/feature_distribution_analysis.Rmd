@@ -195,6 +195,21 @@ feature_ranges <-
 
 ```
 
+# Find thresholds for outlier detection
+
+```{r find_outlier_thresholds}
+
+feature_outlier_ranges <- 
+  sampled_objects %>%
+  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+  gather(feature, value) %>%
+  group_by(feature) %>%
+  summarise_at(vars(value), 
+               funs(lower_outlier_thr = quantile(., 0.25, na.rm = TRUE) - 1.5 * IQR(., na.rm = TRUE),
+                    upper_outlier_thr = quantile(., 0.75, na.rm = TRUE) + 1.5 * IQR(., na.rm = TRUE)))
+
+```
+
 # Collect, summarize and save statistics
 
 ```{r features_statistics}
@@ -202,6 +217,7 @@ feature_ranges <-
 features_statistics <- 
   inner_join(diptest_p_values, skewnesses, by = c("feature")) %>%
   inner_join(feature_ranges, by = c("feature")) %>%
+  inner_join(feature_outlier_ranges, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value_adjusted < 0.05) %>%
   mutate(is_skewed = skewness > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
@@ -233,6 +249,10 @@ features_statistics %>%
 features_statistics %>% 
   select(feature, min, q01, q99, max) %>%
   knitr::kable(caption = "Feature range table", digits = 3)
+
+features_statistics %>% 
+  select(feature, lower_outlier_thr, upper_outlier_thr) %>%
+  knitr::kable(caption = "Feature outlier threshold table", digits = 3)
 
 features_statistics %>% write_csv("feature_statistics.csv")
 
