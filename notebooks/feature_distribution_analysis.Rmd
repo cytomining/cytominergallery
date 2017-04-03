@@ -262,52 +262,69 @@ for (feature_name in feature_names) {
 
 ```
 
-# reporting the correlations using a distributed version of the correlation function
-
-for n.splits <- 32 and n.cores <- 32 on m4.16xlarge AWS instances here is the benchmark for the paralle cor and standard R cor
-
-sampled_objects %>% select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>% cytominergallery::parallel_cor(., n.splits = n.splits, n.cores = n.cores, cov.fun = "custom_multi_covar")
-  replications elapsed relative user.self sys.self user.child sys.child
-            3   7.356        1     3.768    1.996     70.176     6.253
-                                                                         test
-sampled_objects %>% select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>% cor
-  replications elapsed relative user.self sys.self user.child sys.child
-            3   47.54        1     47.35    0.175          0         0
+Report the correlations using a distributed version of the correlation function
 
 ```{r report_correlations}
 
 splits <- 2
 cores <- 4
 # how many top correlated feature to each given feature is shown
-n.top.cor <- 5
+n_top_cor <- 5
 
-sampled_objects %>%
+top_correlations_per_feature <-
+  sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  cytominergallery::parallel_cor(splits = splits,
-                                 cores = cores,
-                                 cov_fun = "two_pass_multi_covar") %>%
-  reshape2::melt(value.name = "cor.") %>%
-  mutate(feature.1 = Var1, feature.2 = Var2) %>%
-  select(-Var1, -Var2) %>%
-  arrange(-abs(cor.)) %>%
-  filter(feature.1 != feature.2) %>%
-  group_by(feature.1) %>%
-  do(head(., n.top.cor)) %>%
-  ungroup() %>%
-  knitr::kable(legend = "Top feature correlations")
+  parallel_cor(splits = splits,
+               cores = cores,
+               cov_fun = "two_pass_multi_covar") %>% 
+  as.data.frame %>% 
+  rownames_to_column("feature_1") %>% 
+  gather(feature_2, cor, -feature_1) %>%
+  filter(feature_1 != feature_2) %>%
+  na.omit %>%
+  arrange(desc(abs(cor))) %>%
+  group_by(feature_1) %>%
+  slice(1:n_top_cor) %>%
+  ungroup 
 
-# benchmarking the running time of the parallel_cor
-rbenchmark::benchmark(sampled_objects %>%
-  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  cytominergallery::parallel_cor(splits = splits,
-                                 cores = cores,
-                                 cov_fun = "two_pass_multi_covar"), replications = 3) %>%
+top_correlations_per_feature
+
+```
+
+Benchmarking
+
+```{r, eval=FALSE}
+
+splits <- 4
+cores <- 4
+sample_fraction <- 1/20
+
+rbenchmark::benchmark(
+  sampled_objects %>%
+    select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+    sample_frac(sample_fraction) %>%
+    parallel_cor(splits = splits,
+                 cores = cores,
+                 cov_fun = "two_pass_multi_covar"), replications = 3) %>%
   print
 
-# benchmarking the running time of the standard cor function
-rbenchmark::benchmark(sampled_objects %>%
-  select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  cor) %>%
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# on an `m4.16xlarge` AWS instance:
+#>  replications elapsed relative user.self sys.self user.child sys.child
+#            3   7.356        1     3.768    1.996     70.176     6.253
+
+
+rbenchmark::benchmark(
+  sampled_objects %>%
+    sample_frac(sample_fraction) %>%
+    select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
+    cor
+  ) %>%
   print
+
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# on an `m4.16xlarge` AWS instance:
+#>  replications elapsed relative user.self sys.self user.child sys.child
+#>            3   47.54        1     47.35    0.175          0         0
 
 ```
