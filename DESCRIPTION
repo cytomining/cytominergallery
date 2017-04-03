@@ -18,7 +18,7 @@ Imports:
     magrittr (>= 1.5),
     outliers (>= 0.14),
     rbenchmark (>= 1.0.0),
-    Rcpp (>=0.12.9.4),
+    Rcpp (>= 0.12.9.4),
     robustbase (>= 0.92-7),
     tibble (>= 1.2)
 Suggests:
