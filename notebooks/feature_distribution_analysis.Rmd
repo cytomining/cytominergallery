@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r load_libraries, echo=FALSE, warning=FALSE, message=FALSE}
+library(cytominergallery)
 library(dplyr)
 library(ggplot2)
 library(magrittr)
