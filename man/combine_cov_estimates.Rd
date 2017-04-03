@@ -8,7 +8,7 @@ combine_cov_estimates(batch_mean_cov, b)
 }
 \arguments{
 \item{batch_mean_cov}{the matrix which contains estimated means and covariance for each batch of data.
-For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and 
+For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and
 rest of the rows being the covariance matrices. Covariance matrices were concatenated column-wise
 resulting in n.k columns.}
 
