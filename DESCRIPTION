@@ -16,7 +16,8 @@ Imports:
     doParallel (>= 1.0.10),
     foreach (>= 1.4.3),
     magrittr (>= 1.5),
-    tibble (>= 1.2)
+    tibble (>= 1.2),
+    robustbase
 Suggests:
     caret (>= 6.0-71),
     cytominer,
