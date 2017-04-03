@@ -59,12 +59,12 @@ NumericMatrix combine_covs_base(NumericMatrix mean_cov_1, NumericMatrix mean_cov
 }
 
 //' online_covar
-//' 
+//'
 //' @param x1 a numeric vector containing samples of the first random variable
 //' @param x2 a numeric vector containing corresponding samples of the second random variable
-//' 
+//'
 //' @export
-//' 
+//'
 // [[Rcpp::export]]
 double online_covar(NumericVector x1, NumericVector x2) {
     return (online_covar(&x1[0], &x2[0], x1.size()));
@@ -72,11 +72,11 @@ double online_covar(NumericVector x1, NumericVector x2) {
 }
 
 //' two_pass_multi_covar
-//' 
-//' @param s a data matrix whose column covariances are sought 
-//' 
+//'
+//' @param s a data matrix whose column covariances are sought
+//'
 //' @export
-//' 
+//'
 // [[Rcpp::export]]
 NumericMatrix two_pass_multi_covar(NumericMatrix s) {
     NumericMatrix result(s.ncol(), s.ncol());
@@ -111,15 +111,15 @@ NumericMatrix two_pass_multi_covar(NumericMatrix s) {
 }
 
 //' combine_cov_estimates
-//' 
+//'
 //' @param batch_mean_cov the matrix which contains estimated means and covariance for each batch of data.
-//'         For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and 
+//'         For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and
 //'         rest of the rows being the covariance matrices. Covariance matrices were concatenated column-wise
-//'         resulting in n.k columns. 
-//' @param b a vector containing number of samples in each batch of data 
-//' 
+//'         resulting in n.k columns.
+//' @param b a vector containing number of samples in each batch of data
+//'
 //' @export
-//' 
+//'
 // [[Rcpp::export]]
 NumericMatrix combine_cov_estimates(NumericMatrix batch_mean_cov, NumericVector b) {
     if (b.size() == 2) {
