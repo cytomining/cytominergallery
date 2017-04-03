@@ -25,6 +25,7 @@ library(tidyr)
 library(tibble)
 library(reshape2)
 library(rbenchmark)
+library(robustbase)
 ```
 
 
@@ -150,7 +151,6 @@ sampled_objects %<>%
 
 ```
 
-
 ## Peform Hartigan's dip test for multimodality.
 
 ```{r diptest}
@@ -175,7 +175,7 @@ diptest_p_values$diptest_p_value_adjusted <-
 skewnesses <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  map(e1071::skewness) %>%
+  map(robustbase::mc) %>%
   as_data_frame() %>%
   gather(feature, skewness)
 
@@ -229,8 +229,7 @@ features_statistics %>%
 features_statistics %>%
   select(feature, skewness) %>%
   na.omit() %>%
-  filter(abs(skewness) > 2) %>%
-  arrange(-abs(skewness)) %>%
+  arrange(-abs(skewness)) %>% 
   knitr::kable(caption = "Feature skewness table", digits = 3)
 
 features_statistics %>%
