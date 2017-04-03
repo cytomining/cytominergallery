@@ -12,4 +12,3 @@ two_pass_multi_covar(s)
 \description{
 two_pass_multi_covar
 }
-

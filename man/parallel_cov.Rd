@@ -2,12 +2,12 @@
 % Please edit documentation in R/parallel_cov.R
 \name{parallel_cov}
 \alias{parallel_cov}
-\title{Parallel covariance function}
+\title{Compute covariance function in batches, in parallel}
 \usage{
 parallel_cov(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar")
 }
 \arguments{
-\item{x}{...}
+\item{x}{data matrix}
 
 \item{splits}{shows the number of splits of data that we want to combine  (should be of 2^n form)}
 
@@ -16,6 +16,5 @@ parallel_cov(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar")
 \item{cov_fun}{covariance function used on each split}
 }
 \description{
-Parallel covariance function
+Compute covariance function in batches, in parallel
 }
-

@@ -24,15 +24,15 @@ two_pass_multi_covar <- function(s) {
 
 #' combine_cov_estimates
 #' 
-#' @param mn_covs the matrix which contains estimated means and covariance for each batch of data. 
+#' @param batch_mean_cov the matrix which contains estimated means and covariance for each batch of data.
 #'         For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and 
 #'         rest of the rows being the covariance matrices. Covariance matrices were concatenated column-wise
 #'         resulting in n.k columns. 
-#' @param ns a vector containing number of samples in each batch of data 
+#' @param b a vector containing number of samples in each batch of data 
 #' 
 #' @export
 #' 
-combine_cov_estimates <- function(mn_covs, ns) {
-    .Call('cytominergallery_combine_cov_estimates', PACKAGE = 'cytominergallery', mn_covs, ns)
+combine_cov_estimates <- function(batch_mean_cov, b) {
+    .Call('cytominergallery_combine_cov_estimates', PACKAGE = 'cytominergallery', batch_mean_cov, b)
 }
 

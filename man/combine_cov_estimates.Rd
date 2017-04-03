@@ -4,17 +4,16 @@
 \alias{combine_cov_estimates}
 \title{combine_cov_estimates}
 \usage{
-combine_cov_estimates(mn_covs, ns)
+combine_cov_estimates(batch_mean_cov, b)
 }
 \arguments{
-\item{mn_covs}{the matrix which contains estimated means and covariance for each batch of data. 
+\item{batch_mean_cov}{the matrix which contains estimated means and covariance for each batch of data.
 For n variable, and k batches, it is (n+1)*(n.k) size, with the first row being the means and 
 rest of the rows being the covariance matrices. Covariance matrices were concatenated column-wise
 resulting in n.k columns.}
 
-\item{ns}{a vector containing number of samples in each batch of data}
+\item{b}{a vector containing number of samples in each batch of data}
 }
 \description{
 combine_cov_estimates
 }
-

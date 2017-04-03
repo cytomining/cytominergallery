@@ -29,14 +29,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // combine_cov_estimates
-NumericMatrix combine_cov_estimates(NumericMatrix mn_covs, NumericVector ns);
-RcppExport SEXP cytominergallery_combine_cov_estimates(SEXP mn_covsSEXP, SEXP nsSEXP) {
+NumericMatrix combine_cov_estimates(NumericMatrix batch_mean_cov, NumericVector b);
+RcppExport SEXP cytominergallery_combine_cov_estimates(SEXP batch_mean_covSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type mn_covs(mn_covsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type ns(nsSEXP);
-    rcpp_result_gen = Rcpp::wrap(combine_cov_estimates(mn_covs, ns));
+    Rcpp::traits::input_parameter< NumericMatrix >::type batch_mean_cov(batch_mean_covSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(combine_cov_estimates(batch_mean_cov, b));
     return rcpp_result_gen;
 END_RCPP
 }

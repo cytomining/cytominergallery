@@ -14,4 +14,3 @@ online_covar(x1, x2)
 \description{
 online_covar
 }
-
