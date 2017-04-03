@@ -10,7 +10,7 @@ vignette: >
 ---
 
 This vignette demonstrates how to summarize single-cell data from a
-morphological profiling experiment into treatment "profiles". This dataset is 
+morphological profiling experiment into treatment "profiles". This dataset is
 from [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321) and is part of the
 [BBBC021](https://data.broadinstitute.org/bbbc/BBBC021/) dataset:
 
@@ -20,9 +20,9 @@ The images were analyzed using [CellProfiler](http://cellprofiler.org). The
 CellProfiler pipelines and complete set of instructions to generate the data
 are provided in [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321).
 
-Here, we analyze the single-cell data to perform a simple operation: 
-summarizing them into per-well measurements by computing averages. This 
-summarized data will later be used to predict mechanism-of-action of the 
+Here, we analyze the single-cell data to perform a simple operation:
+summarizing them into per-well measurements by computing averages. This
+summarized data will later be used to predict mechanism-of-action of the
 compounds  (see the `predict_moa` vignette.)
 
 This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite> have been downloaded into `~/Downloads`.
@@ -38,9 +38,9 @@ library(magrittr)
 
 # Load data
 
-First, load the data! The data is contained in 4 tables named `Image`, 
-`Cytoplasm`, `Cells`, and `Nuclei`. The code below joins these tables to 
-create a single table named `object`. 
+First, load the data! The data is contained in 4 tables named `Image`,
+`Cytoplasm`, `Cells`, and `Nuclei`. The code below joins these tables to
+create a single table named `object`.
 
 
 ```{r load, message=FALSE}
@@ -62,8 +62,8 @@ object %<>% inner_join(image, by = c("TableNumber", "ImageNumber"))
 
 ```
 
-In this table, the measurement columns start with `Nuclei_`, `Cells_`, or 
-`Cytoplasm_`. 
+In this table, the measurement columns start with `Nuclei_`, `Cells_`, or
+`Cytoplasm_`.
 
 ```{r}
 variables <-
@@ -80,20 +80,20 @@ print(length(variables))
 How many cells?
 
 ```{r}
-object %>% 
+object %>%
   count() %>%
   knitr::kable(caption = "No. of cells")
 ```
 
-Before aggregating the data, let's filter it down to one well and plot the 
+Before aggregating the data, let's filter it down to one well and plot the
 histogram of a single feature:
 
 ```{r fig.width=5, fig.height=5}
-object %>% 
+object %>%
   filter(Image_Metadata_Plate == "Week1_22123" && Image_Metadata_Well == "E04") %>%
-  select(Nuclei_Intensity_IntegratedIntensity_CorrDAPI) %>% 
+  select(Nuclei_Intensity_IntegratedIntensity_CorrDAPI) %>%
   collect() %>% {
-    ggplot(., aes(Nuclei_Intensity_IntegratedIntensity_CorrDAPI)) + 
+    ggplot(., aes(Nuclei_Intensity_IntegratedIntensity_CorrDAPI)) +
       geom_histogram(binwidth = 5)
     }
 
@@ -101,7 +101,7 @@ object %>%
 
 # Summarize measurements per well
 
-Now let's summarize the data by grouping by well and computing averages. 
+Now let's summarize the data by grouping by well and computing averages.
 
 ```{r message=FALSE}
 profiles <-
@@ -120,19 +120,19 @@ profiles %<>%
 How many wells?
 
 ```{r}
-profiles %>% 
+profiles %>%
   count() %>%
   knitr::kable(caption = "No. of wells")
 ```
 
 This data is used in the vignette `predict_moa` to predict the mechanism-of-action
-of compounds. 
+of compounds.
 
 Before we move on to that, let's plot the relationship between a pair of variables from this summarized data
 
 ```{r fig.width=6, fig.height=5, message=FALSE}
-p <- 
-  ggplot(profiles, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) + 
+p <-
+  ggplot(profiles, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) +
   geom_hex()
 
 print(p)
