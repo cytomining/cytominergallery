@@ -4,7 +4,7 @@
 \alias{parallel_cor}
 \title{Parallel correlation function}
 \usage{
-parallel_cor(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar")
+parallel_cor(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar")
 }
 \arguments{
 \item{x}{...}
@@ -18,3 +18,4 @@ parallel_cor(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar")
 \description{
 Parallel correlation function
 }
+

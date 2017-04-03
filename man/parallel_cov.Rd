@@ -4,7 +4,7 @@
 \alias{parallel_cov}
 \title{Parallel covariance function}
 \usage{
-parallel_cov(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar")
+parallel_cov(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_covar")
 }
 \arguments{
 \item{x}{...}
@@ -18,3 +18,4 @@ parallel_cov(x, splits = 2, cores = 2, cov_fun = "custom_multi_covar")
 \description{
 Parallel covariance function
 }
+
