@@ -4,11 +4,9 @@ language: R
 sudo: false
 cache:
   - packages
-  -
-    directories:
-      - $HOME/Downloads
 env:
   global:
+    - R_BUILD_ARGS="--no-build-vignettes --no-manual"
     - R_CHECK_ARGS="--no-build-vignettes --no-manual"
 before_script:
   - mkdir -p ~/Downloads
