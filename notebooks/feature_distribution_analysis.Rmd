@@ -5,7 +5,7 @@ output:
   html_document: default
 ---
 
-This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG. Correlations between 
+This notebook analyzes feature distributions. We categorize features as being multimodal, skewed but unimodel, or symmetric and unimodal. A statistic (Hartigan's dip test statistic) is used to check for multimodality. Unimodal features with skewness > 2 are categorized as "skewed". All other features are categorized as symmetric and unimodal. This is reported in a table in the notebook and also available as a CSV file. Additionally, we plot the histogram of each feature, saved as a PNG. Correlations between
 features are also reported.
 
 
@@ -161,8 +161,8 @@ sampled_objects %<>%
 ```{r diptest}
 
 remove_outliers <- function(x) {
-  upper_end_outlier <- outliers::scores(x, type = "iqr", lim = 1.5)  
-  lower_end_outlier <- outliers::scores(-x, type = "iqr", lim = 1.5)  
+  upper_end_outlier <- outliers::scores(x, type = "iqr", lim = 1.5)
+  lower_end_outlier <- outliers::scores(-x, type = "iqr", lim = 1.5)
   x[which(!(upper_end_outlier | lower_end_outlier))]
 }
 
@@ -170,7 +170,7 @@ robust_dip_test <- function(x) {
   diptest::dip.test(remove_outliers(x))[["p.value"]]
 }
 
-diptest_p_values <- 
+diptest_p_values <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   map(robust_dip_test) %>%
@@ -219,12 +219,12 @@ feature_ranges <-
 
 ```{r find_outlier_thresholds}
 
-feature_outlier_ranges <- 
+feature_outlier_ranges <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   gather(feature, value) %>%
   group_by(feature) %>%
-  summarise_at(vars(value), 
+  summarise_at(vars(value),
                funs(lower_outlier_thr = quantile(., 0.25, na.rm = TRUE) - 1.5 * IQR(., na.rm = TRUE),
                     upper_outlier_thr = quantile(., 0.75, na.rm = TRUE) + 1.5 * IQR(., na.rm = TRUE)))
 
@@ -240,39 +240,45 @@ features_statistics <-
   inner_join(feature_ranges, by = c("feature")) %>%
   inner_join(feature_outlier_ranges, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value < 0.1) %>%
-  mutate(is_skewed = skewness > 2) %>%
+  mutate(is_skewed = abs(skewness) > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
 
+# Feature skewness summary
 features_statistics %>%
   group_by(is_skewed) %>%
   tally() %>%
-  knitr::kable(caption = "Feature skewness summary", digits = 2)
+  print(digits = 2)
 
+# Feature multimodality summary
 features_statistics %>%
   group_by(is_multimodal) %>%
   tally() %>%
-  knitr::kable(caption = "Feature multimodality summary", digits = 2)
+  print(digits = 2)
 
-features_statistics %>% 
+# Feature multimodality table
+features_statistics %>%
   mutate(neg_log_p_value_dip = -log(diptest_p_value, base = 10)) %>%
-  filter(diptest_p_value < 0.10) %>% 
+  filter(diptest_p_value < 0.10) %>%
   select(feature, neg_log_p_value_dip) %>%
-  arrange(desc(neg_log_p_value_dip)) %>% 
-  knitr::kable(caption = "Feature multimodality table", digits = 3)
+  arrange(desc(neg_log_p_value_dip)) %>%
+  print(digits = 3)
 
+# Feature skewness table
 features_statistics %>%
   select(feature, skewness) %>%
   na.omit() %>%
-  arrange(desc(abs(skewness))) %>% 
-  knitr::kable(caption = "Feature skewness table", digits = 3)
+  arrange(desc(abs(skewness))) %>%
+  print(digits = 3)
 
+# Feature range table
 features_statistics %>%
   select(feature, min, q01, q99, max) %>%
-  knitr::kable(caption = "Feature range table", digits = 3)
+  print(digits = 3)
 
-feature_outlier_ranges %>% 
+# Feature outlier threshold table
+feature_outlier_ranges %>%
   select(feature, lower_outlier_thr, upper_outlier_thr) %>%
-  knitr::kable(caption = "Feature outlier threshold table", digits = 3)
+  print(digits = 3)
 
 features_statistics %>% write_csv("feature_statistics.csv")
 
@@ -317,22 +323,23 @@ correlations <-
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
   parallel_cor(splits = splits,
                cores = cores,
-               cov_fun = "two_pass_multi_covar") %>% 
-  as.data.frame %>% 
-  rownames_to_column("feature_1") %>% 
+               cov_fun = "two_pass_multi_covar") %>%
+  as.data.frame %>%
+  rownames_to_column("feature_1") %>%
   gather(feature_2, cor, -feature_1) %>%
   filter(feature_1 != feature_2) %>%
   na.omit %>%
-  arrange(desc(abs(cor))) 
+  arrange(desc(abs(cor)))
 
 top_correlations_per_feature <-
   correlations %>%
   group_by(feature_1) %>%
   slice(1:n_top_cor) %>%
-  ungroup 
+  ungroup
 
+# Correlations between features
 top_correlations_per_feature %>%
-  knitr::kable(caption = "Correlations between features", digits = 3)
+  print(digits = 3)
 
 correlations %>% write_csv("correlations.csv")
 
@@ -355,7 +362,7 @@ rbenchmark::benchmark(
                  cov_fun = "two_pass_multi_covar"), replications = 3) %>%
   print
 
-# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32`
 # on an `m4.16xlarge` AWS instance:
 #>  replications elapsed relative user.self sys.self user.child sys.child
 #            3   7.356        1     3.768    1.996     70.176     6.253
@@ -365,12 +372,12 @@ rbenchmark::benchmark(
   sampled_objects %>%
     sample_frac(sample_fraction) %>%
     select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-    cor, 
+    cor,
   replications = 3
   ) %>%
   print
 
-# for `sample_fraction = 1`, `splits = 32`, `cores = 32` 
+# for `sample_fraction = 1`, `splits = 32`, `cores = 32`
 # on an `m4.16xlarge` AWS instance:
 #>  replications elapsed relative user.self sys.self user.child sys.child
 #>            3   47.54        1     47.35    0.175          0         0
