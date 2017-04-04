@@ -240,7 +240,7 @@ features_statistics <-
   inner_join(feature_ranges, by = c("feature")) %>%
   inner_join(feature_outlier_ranges, by = c("feature")) %>%
   mutate(is_multimodal = diptest_p_value < 0.1) %>%
-  mutate(is_skewed = skewness > 2) %>%
+  mutate(is_skewed = abs(skewness) > 2) %>%
   mutate(is_skewed = ifelse(is_multimodal, NA, is_skewed))
 
 # Feature skewness summary
