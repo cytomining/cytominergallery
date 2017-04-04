@@ -360,8 +360,9 @@ rbenchmark::benchmark(
     parallel_cor(splits = splits,
                  cores = cores,
                  cov_fun = "two_pass_multi_covar"), replications = 3) %>%
-  print
-
+  select(-test) %>%
+  gather(key, value)
+  
 # for `sample_fraction = 1`, `splits = 32`, `cores = 32`
 # on an `m4.16xlarge` AWS instance:
 #>  replications elapsed relative user.self sys.self user.child sys.child
@@ -375,7 +376,8 @@ rbenchmark::benchmark(
     cor,
   replications = 3
   ) %>%
-  print
+  select(-test) %>%
+  gather(key, value)
 
 # for `sample_fraction = 1`, `splits = 32`, `cores = 32`
 # on an `m4.16xlarge` AWS instance:
