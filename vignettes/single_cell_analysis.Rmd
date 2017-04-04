@@ -25,7 +25,7 @@ summarizing them into per-well measurements by computing averages. This
 summarized data will later be used to predict mechanism-of-action of the
 compounds  (see the `predict_moa` vignette.)
 
-This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite> have been downloaded into `~/Downloads`.
+This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite> has been downloaded into `~/Downloads`.
 
 
 ```{r libraries, message=FALSE}
@@ -85,6 +85,9 @@ object %>%
   knitr::kable(caption = "No. of cells")
 ```
 
+Note that this is a smaller version of the BBBC021 dataset. The full dataset is here
+<https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite>.
+
 Before aggregating the data, let's filter it down to one well and plot the
 histogram of a single feature:
 
@@ -125,7 +128,7 @@ profiles %>%
   knitr::kable(caption = "No. of wells")
 ```
 
-This data is used in the vignette `predict_moa` to predict the mechanism-of-action
+The full version of this dataset is used in the vignette `predict_moa` to predict the mechanism-of-action
 of compounds.
 
 Before we move on to that, let's plot the relationship between a pair of variables from this summarized data

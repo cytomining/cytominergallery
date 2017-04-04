@@ -2,7 +2,12 @@
 
 language: R
 sudo: false
-cache: packages
+cache:
+  - packages
+env:
+  global:
+    - R_BUILD_ARGS="--no-build-vignettes --no-manual"
+    - R_CHECK_ARGS="--no-build-vignettes --no-manual"
 before_script:
   - mkdir -p ~/Downloads
-  - wget https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013_small.sqlite -P ~/Downloads/ljosa_jbiomolscreen_2013.sqlite
+  - wget https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite -P ~/Downloads/
