@@ -19,7 +19,6 @@ Imports:
     outliers (>= 0.14),
     rbenchmark (>= 1.0.0),
     Rcpp (>= 0.12.9.4),
-    robustbase (>= 0.92-7),
     tibble (>= 1.2)
 Suggests:
     caret (>= 6.0-71),
@@ -31,6 +30,7 @@ Suggests:
     lazyeval (>= 0.2.0),
     purrr (>= 0.2.2),
     readr (>= 1.0.0),
+    robustbase (>= 0.92-7),
     rmarkdown (>= 1.0),
     RSQLite (>= 1.0.0),
     stringr (>= 1.1.0),
