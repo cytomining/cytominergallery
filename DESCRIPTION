@@ -20,7 +20,7 @@ Imports:
     rbenchmark (>= 1.0.0),
     Rcpp (>= 0.12.9.4),
     robustbase (>= 0.92-7),
-    tibble (>= 1.2)
+    tibble (>= 1.2),
     SNFTool (>= 2.2)
 Suggests:
     caret (>= 6.0-71),
