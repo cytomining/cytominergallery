@@ -1,17 +1,18 @@
 ---
 title: "Predict compounds mechanism-of-action by morphological profiling"
-author: "Allen Goodman and Shantanu Singh"
+author: "Tim Becker and Mohammad Rohban"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Predict compounds mechanism-of-action by morphological profiling}
+  %\VignetteIndexEntry{Improving predicting compounds mechanism-of-action by morphological profiling using SNF}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 This vignette demonstrates predicting compound mechanism-of-action using
 morphological profiling data. The data is "cleaned up" using the similarity 
-network fusion algorithm (SNFD). See the vignette `single_cell_analysis` for
+network fusion algorithm (SNF). This vignette bases on the vignette 
+`predict_moa`. See the vignette `single_cell_analysis` for
 details about this dataset.
 
 ```{r libraries, message=FALSE}
@@ -26,7 +27,8 @@ library(SNFtool)
 # Load data
 
 Per-well profiles computed in `single_cell_analysis` are loaded, as well as
-metadata associated with these profiles (obtained from [BBBC021](https://data.broadinstitute.org/bbbc/BBBC021/))
+metadata associated with these profiles (obtained from [BBBC021](https://data.broadinstitute.org/bbbc/BBBC021/)).
+This is the same data as used in the vignette `predict_moa`.
 
 ```{r message=FALSE}
 profiles <-
@@ -60,47 +62,6 @@ variables <-
 
 ```
 
-How many compounds?
-
-```{r}
-profiles %>%
-  filter(Image_Metadata_Compound != "DMSO") %>%
-  distinct(Image_Metadata_Compound) %>%
-  tally() %>%
-  rename(`Number of compounds` = n) %>%
-  knitr::kable()
-```
-
-How many unique treatments (compound-concentration pairs)?
-
-```{r}
-profiles %>%
-  filter(Image_Metadata_Compound != "DMSO") %>%
-  distinct(Image_Metadata_Compound, Image_Metadata_Concentration) %>%
-  tally() %>%
-  rename(`Number of unique treatments` = n) %>%
-  knitr::kable()
-```
-
-How many replicates per unique treatment?
-
-```{r}
-profiles %>%
-  filter(Image_Metadata_Compound != "DMSO") %>%
-  count(Image_Metadata_Compound, Image_Metadata_Concentration) %>%
-  rename(`Number of replicates` = n) %>%
-  knitr::kable()
-```
-
-How many DMSO wells per plate?
-
-```{r}
-profiles %>%
-  filter(Image_Metadata_Compound == "DMSO") %>%
-  count(Image_Metadata_Plate) %>%
-  rename(`Number of DMSO wells` = n) %>%
-  knitr::kable()
-```
 
 # Feature selection
 
@@ -140,19 +101,9 @@ feature_replicate_correlations <-
     cores = 2)
 ```
 
-What the does the distribution look like?
 
-```{r fig.width=4, fig.height=4, message=FALSE}
-
-ggplot(feature_replicate_correlations, aes(median))  +
-  stat_ecdf() +
-  geom_vline(xintercept = 0.5, color = "red") +
-  xlab("median replicate correlation (Pearson)") +
-  ylab("F(x)")
-```
-
-Here, we select a threshold and remove features that have a replicate
-correlation lower than that threshold
+Similar to the `predict_moa` vignette, we select a threshold and remove features that 
+have a replicate correlation lower than that threshold.
 
 ```{r message=FALSE}
 
@@ -169,12 +120,12 @@ variables <-
 ```
 
 
-Filter based on correlation between features. The morphological features
-extracted contain several highly correlated groups. We want to to prune the set
-of features, retaining only one feature from each of these highly correlated
-sets. The function `correlation_threshold` provides an approximate (greedy)
-solution to this problem. After excluding the features, no pair of features
-have a correlation greater than `cutoff` indicated below.
+Filter based on correlation between features, similar to `predict_moa`. The 
+morphological features extracted contain several highly correlated groups. 
+We want to to prune the set of features, retaining only one feature from each 
+of these highly correlated sets. The function `correlation_threshold` provides 
+an approximate (greedy) solution to this problem. After excluding the features, 
+no pair of features have a correlation greater than `cutoff` indicated below.
 
 ```{r message=FALSE}
 profiles <-
@@ -186,13 +137,12 @@ profiles <-
     cutoff = 0.95) %>%
   collect()
 
-profiles %>% 
-  summarise('number of selected features' = n()) %>% 
-  print()
 
 variables <-
   colnames(profiles) %>%
   str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+
+
 ```
 
 # Normalize with reference to DMSO
@@ -216,6 +166,8 @@ profiles <-
       variables = variables,
       operation = "drop_na_columns"
   )
+
+
 
 variables <-
   colnames(profiles) %>%
@@ -279,11 +231,12 @@ plot_tsne <- function(correlation, mechanism){
 plot_tsne(correlation = correlation, mechanism = mechanism)
 ```
 
-The data clusters into mechanisms quite nicely. Let's quantify this
-by evaluating how well we can predict mechanism-of-action by simply assigning
-a treatment the mechanism of its nearest neighbor.
+As we saw in predict_moa, the data clusters into mechanisms quite nicely. Let's 
+quantify this by evaluating how well we can predict mechanism-of-action by simply 
+assigning a treatment the mechanism of its nearest neighbor.
 NOTE: A common mistake when analyzing this dataset is to not exclude other
-concentrations of the same compound when looking up the nearest neighbor. That is cheating! `mask` in the code below addresses this.
+concentrations of the same compound when looking up the nearest neighbor. That is 
+cheating! `mask` in the code below addresses this.
 
 ```{r message=FALSE}
 
@@ -337,7 +290,7 @@ affinity <- affinityMatrix(distance,  K = 20, sigma = 0.5)
 snf_distance <- SNF(list(affinity, affinity), K = 20, t = 20 )
 ```
 
-Get we better results using SNF?
+Do we get better results using SNF?
 ```{r}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
@@ -383,6 +336,7 @@ snf_distance <- SNF(affinity_list, K = 20, t = 20 )
 
 How is the performance?
 ```{r}
+
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
 confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
@@ -411,7 +365,6 @@ feature_list <- lapply(constituents, function(x)
     colnames())
   )
 
-
 correlation_matrices <- lapply(feature_list, function(x) (
   profiles %>%
   select(one_of(x)) %>%
@@ -424,12 +377,11 @@ affinity_list <- lapply(correlation_matrices, function(x) (
   affinityMatrix(1 - x, K = 20, sigma = 0.5 )
 ))
 
-
 snf_distance <- SNF(affinity_list, K = 20, t = 20 )
 ```
 
 
-Get we better results?
+Do we get better results?
 ```{r}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
