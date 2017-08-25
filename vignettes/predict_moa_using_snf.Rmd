@@ -67,24 +67,6 @@ variables <-
 
 Next, lets filter the set of features based on various measures of quality
 
-Remove features that have near-zero variance. This dataset doesn't have any
-such features, so nothing is removed.
-```{r message=FALSE}
-profiles <-
-  cytominer::select(
-    population = profiles,
-    variables = variables,
-    sample = profiles,
-    operation = "variance_threshold"
-  ) %>%
-  collect()
-
-variables <-
-  colnames(profiles) %>%
-  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
-```
-
-
 Remove features that have poor correlation across replicates. To do so, lets
 first compute the correlations.
 
@@ -120,12 +102,7 @@ variables <-
 ```
 
 
-Filter based on correlation between features, similar to `predict_moa`. The 
-morphological features extracted contain several highly correlated groups. 
-We want to to prune the set of features, retaining only one feature from each 
-of these highly correlated sets. The function `correlation_threshold` provides 
-an approximate (greedy) solution to this problem. After excluding the features, 
-no pair of features have a correlation greater than `cutoff` indicated below.
+Filter based on correlation between features, similar to `predict_moa`. 
 
 ```{r message=FALSE}
 profiles <-
@@ -231,7 +208,7 @@ plot_tsne <- function(correlation, mechanism){
 plot_tsne(correlation = correlation, mechanism = mechanism)
 ```
 
-As we saw in predict_moa, the data clusters into mechanisms quite nicely. Let's 
+As we saw in `predict_moa`, the data clusters into mechanisms quite nicely. Let's 
 quantify this by evaluating how well we can predict mechanism-of-action by simply 
 assigning a treatment the mechanism of its nearest neighbor.
 NOTE: A common mistake when analyzing this dataset is to not exclude other
@@ -282,7 +259,7 @@ confusion_matrix$table %>%
 
 ```
 
-Next we test the similarity network fusion (SNF) to clean the data. 
+Next we test the similarity network fusion (SNF) algorithm to clean the data. 
 
 ```{r}
 distance <- 1-correlation
@@ -291,6 +268,7 @@ snf_distance <- SNF(list(affinity, affinity), K = 20, t = 20 )
 ```
 
 Do we get better results using SNF?
+
 ```{r}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
@@ -299,7 +277,7 @@ evaluate_prediction(confusion_matrix) %>%
   knitr::kable(digits = 2)
 ```
 
-Visualize the results using tsne. 
+Visualize the results using t-SNE. 
 
 ```{r}
 
@@ -307,7 +285,8 @@ plot_tsne(correlation = snf_distance, mechanism = mechanism)
 
 ```
 
-Now the data is split in different feature categories that are combined using SNF. 
+Now let's split the data by the feature categories, compute a similarity matrix per 
+category, then combine these matrices using SNF. 
 
 ```{r}
 
@@ -335,6 +314,7 @@ snf_distance <- SNF(affinity_list, K = 20, t = 20 )
 ```
 
 How is the performance?
+
 ```{r}
 
 prediction <- predict_moa(snf_distance, compound, mechanism)
@@ -345,13 +325,16 @@ evaluate_prediction(confusion_matrix) %>%
   knitr::kable(digits = 2)
 ```
 
-Again tsne plot
+Again plot using t-SNE
+
 ```{r}
 
 plot_tsne(correlation = snf_distance, mechanism = mechanism)
 
 ```
-We split the data in different constituents  
+
+Now let's split the data by the cell constituents, and as before, 
+compute a similarity matrix per constituent, then combine these matrices using SNF. 
 
 ```{r}
 #profiles %<>%
@@ -382,6 +365,7 @@ snf_distance <- SNF(affinity_list, K = 20, t = 20 )
 
 
 Do we get better results?
+
 ```{r}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
