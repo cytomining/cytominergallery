@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // online_covar
 double online_covar(NumericVector x1, NumericVector x2);
-RcppExport SEXP cytominergallery_online_covar(SEXP x1SEXP, SEXP x2SEXP) {
+RcppExport SEXP _cytominergallery_online_covar(SEXP x1SEXP, SEXP x2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +19,7 @@ END_RCPP
 }
 // two_pass_multi_covar
 NumericMatrix two_pass_multi_covar(NumericMatrix s);
-RcppExport SEXP cytominergallery_two_pass_multi_covar(SEXP sSEXP) {
+RcppExport SEXP _cytominergallery_two_pass_multi_covar(SEXP sSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -30,7 +30,7 @@ END_RCPP
 }
 // combine_cov_estimates
 NumericMatrix combine_cov_estimates(NumericMatrix batch_mean_cov, NumericVector b);
-RcppExport SEXP cytominergallery_combine_cov_estimates(SEXP batch_mean_covSEXP, SEXP bSEXP) {
+RcppExport SEXP _cytominergallery_combine_cov_estimates(SEXP batch_mean_covSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,4 +39,16 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(combine_cov_estimates(batch_mean_cov, b));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_cytominergallery_online_covar", (DL_FUNC) &_cytominergallery_online_covar, 2},
+    {"_cytominergallery_two_pass_multi_covar", (DL_FUNC) &_cytominergallery_two_pass_multi_covar, 1},
+    {"_cytominergallery_combine_cov_estimates", (DL_FUNC) &_cytominergallery_combine_cov_estimates, 2},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_cytominergallery(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }
