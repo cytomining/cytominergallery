@@ -9,7 +9,7 @@
 #' @export
 #'
 online_covar <- function(x1, x2) {
-    .Call('cytominergallery_online_covar', PACKAGE = 'cytominergallery', x1, x2)
+    .Call('_cytominergallery_online_covar', PACKAGE = 'cytominergallery', x1, x2)
 }
 
 #' two_pass_multi_covar
@@ -19,7 +19,7 @@ online_covar <- function(x1, x2) {
 #' @export
 #'
 two_pass_multi_covar <- function(s) {
-    .Call('cytominergallery_two_pass_multi_covar', PACKAGE = 'cytominergallery', s)
+    .Call('_cytominergallery_two_pass_multi_covar', PACKAGE = 'cytominergallery', s)
 }
 
 #' combine_cov_estimates
@@ -33,6 +33,6 @@ two_pass_multi_covar <- function(s) {
 #' @export
 #'
 combine_cov_estimates <- function(batch_mean_cov, b) {
-    .Call('cytominergallery_combine_cov_estimates', PACKAGE = 'cytominergallery', batch_mean_cov, b)
+    .Call('_cytominergallery_combine_cov_estimates', PACKAGE = 'cytominergallery', batch_mean_cov, b)
 }
 
