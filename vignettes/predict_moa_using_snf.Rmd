@@ -279,7 +279,7 @@ evaluate_prediction(confusion_matrix) %>%
 
 Visualize the results using t-SNE. 
 
-```{r}
+```{r fig.width=8, fig.height=6, message=FALSE}
 
 plot_tsne(correlation = snf_distance, mechanism = mechanism)
 
@@ -327,7 +327,7 @@ evaluate_prediction(confusion_matrix) %>%
 
 Again plot using t-SNE
 
-```{r}
+```{r fig.width=8, fig.height=6, message=FALSE}
 
 plot_tsne(correlation = snf_distance, mechanism = mechanism)
 
@@ -366,7 +366,7 @@ snf_distance <- SNF(affinity_list, K = 20, t = 20 )
 
 Do we get better results?
 
-```{r}
+```{r fig.width=8, fig.height=6, message=FALSE}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
 confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
