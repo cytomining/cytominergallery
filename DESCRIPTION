@@ -44,7 +44,7 @@ Suggests:
     tsne (>= 0.1-3)
 Remotes: CellProfiler/cytominer
 VignetteBuilder: knitr
-URL: https://github.com/shntnu/cytominergallery
-BugReports: https://github.com/shntnu/cytominergallery/issues
+URL: https://github.com/cytomining/cytominergallery
+BugReports: https://github.com/cytomining/cytominergallery/issues
 RoxygenNote: 6.0.1
 LinkingTo: Rcpp
