@@ -1,5 +1,5 @@
 ---
-title: "Predict compounds mechanism-of-action by morphological profiling"
+title: "Improving predicting compounds mechanism-of-action by morphological profiling using SNF"
 author: "Tim Becker and Mohammad Rohban"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
