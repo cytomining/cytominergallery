@@ -23,7 +23,7 @@ parallel_cov <- function(x, splits = 2, cores = 2, cov_fun = "two_pass_multi_cov
 
   batches <- c(batches, n - sum(batches))
 
-  j <- 0 # to avoid warning: no visible binding for global variable ‘j’
+  j <- 0 # to avoid warning no visible binding for global variable j
 
   result <- foreach::foreach(j = 1:length(batches)) %dopar% {
     if (j == 1) {
