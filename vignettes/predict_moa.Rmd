@@ -109,7 +109,7 @@ such features, so nothing is removed.
 
 ```{r message=FALSE}
 profiles <-
-  cytominer::select(
+  cytominer::variable_select(
     population = profiles,
     variables = variables,
     sample = profiles,
@@ -175,7 +175,7 @@ have a correlation greater than `cutoff` indicated below.
 
 ```{r message=FALSE}
 profiles <-
-  cytominer::select(
+  cytominer::variable_select(
     population = profiles,
     variables = variables,
     sample = profiles,
@@ -206,7 +206,7 @@ profiles <-
   )
 
 profiles <-
-  cytominer::select(
+  cytominer::variable_select(
       population = profiles,
       variables = variables,
       operation = "drop_na_columns"
@@ -313,7 +313,5 @@ confusion_matrix$table %>%
   knitr::kable()
 
 ```
-
-
 
 
