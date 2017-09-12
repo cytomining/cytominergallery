@@ -106,7 +106,7 @@ Filter based on correlation between features, similar to `predict_moa`.
 
 ```{r message=FALSE}
 profiles <-
-  cytominer::select(
+  cytominer::variable_select(
     population = profiles,
     variables = variables,
     sample = profiles,
@@ -138,7 +138,7 @@ profiles <-
   )
 
 profiles <-
-  cytominer::select(
+  cytominer::variable_select(
       population = profiles,
       variables = variables,
       operation = "drop_na_columns"
