@@ -32,6 +32,7 @@ This vignette assumes that the single-cell data <https://s3.amazonaws.com/imagin
 library(dplyr)
 library(ggplot2)
 library(magrittr)
+library(stringr)
 
 ```
 
@@ -118,6 +119,10 @@ profiles <-
 profiles %<>%
   collect()
 
+variables <-
+  colnames(profiles) %>%
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+
 ```
 
 How many wells?
@@ -135,7 +140,7 @@ Before we move on to that, let's plot the relationship between a pair of variabl
 
 ```{r fig.width=6, fig.height=5, message=FALSE}
 p <-
-  ggplot(profiles, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) +
+  ggplot(profiles, aes(Cells_AreaShape_Area_mean, Nuclei_AreaShape_Area_mean)) +
   geom_hex()
 
 print(p)
