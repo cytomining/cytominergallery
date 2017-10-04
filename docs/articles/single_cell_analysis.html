@@ -78,7 +78,7 @@
       <h1>Analyze single-cell data</h1>
                         <h4 class="author">Allen Goodman and Shantanu Singh</h4>
             
-            <h4 class="date">2017-09-12</h4>
+            <h4 class="date">2017-10-03</h4>
           </div>
 
     
@@ -93,7 +93,8 @@
 <p>This vignette assumes that the single-cell data <a href="https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite" class="uri">https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite</a> has been downloaded into <code>~/Downloads</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(dplyr)
 <span class="kw">library</span>(ggplot2)
-<span class="kw">library</span>(magrittr)</code></pre></div>
+<span class="kw">library</span>(magrittr)
+<span class="kw">library</span>(stringr)</code></pre></div>
 <div id="load-data" class="section level1">
 <h1 class="hasAnchor">
 <a href="#load-data" class="anchor"></a>Load data</h1>
@@ -155,7 +156,11 @@ object <span class="op">%&lt;&gt;%</span><span class="st"> </span><span class="k
   )
 
 profiles <span class="op">%&lt;&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()</code></pre></div>
+<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()
+
+variables &lt;-
+<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
 <p>How many wells?</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>() <span class="op">%&gt;%</span>
@@ -171,7 +176,7 @@ profiles <span class="op">%&lt;&gt;%</span>
 <p>The full version of this dataset is used in the vignette <code>predict_moa</code> to predict the mechanism-of-action of compounds.</p>
 <p>Before we move on to that, let’s plot the relationship between a pair of variables from this summarized data</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p &lt;-
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(profiles, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) <span class="op">+</span>
+<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(profiles, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Cells_AreaShape_Area_mean, Nuclei_AreaShape_Area_mean)) <span class="op">+</span>
 <span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_hex">geom_hex</a></span>()
 
 <span class="kw">print</span>(p)</code></pre></div>

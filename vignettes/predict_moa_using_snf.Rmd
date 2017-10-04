@@ -169,6 +169,11 @@ profiles <-
                "Image_Metadata_MoA"),
     operation = "mean"
   )
+
+variables <-
+  colnames(profiles) %>%
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+
 ```
 
 
