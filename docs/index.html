@@ -29,7 +29,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
 <li>
-  <a href="/index.html">
+  <a href="index.html">
     <span class="fa fa-home fa-lg"></span>
      
   </a>
@@ -76,27 +76,21 @@
   <div class="contents col-md-9">
     
 
-<div id="cytominer-gallery" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#cytominer-gallery" class="anchor"></a>cytominer gallery</h1></div>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<section class="level1"><div class="page-header"><h1>cytominer gallery</h1></div>
+<section class="level2"><h2>Installation</h2>
 <p>Install <a href="https://www.r-project.org">R</a> and <a href="https://www.rstudio.com/">RStudio</a>.</p>
 <p>Download this <a href="https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite">sqlite</a> file into <code>~/Downloads</code> (required by the vignette <code>single_cell_analysis</code>).</p>
 <p>Install the <code>cytominergallery</code> package from GitHub:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># install.packages("devtools")</span>
-devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/install_github">install_github</a></span>(<span class="st">"cytomining/cytominergallery"</span>, <span class="dt">dependencies =</span> <span class="ot">TRUE</span>, <span class="dt">build_vignettes =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co"># install.packages("devtools")</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/install_github">install_github</a></span>(<span class="st">"cytomining/cytominergallery"</span>, <span class="dt">dependencies =</span> <span class="ot">TRUE</span>, <span class="dt">build_vignettes =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p>You may need to do run that again in order to build the vignettes correctly (seems like a bug in <code>install_github</code>):</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/install_github">install_github</a></span>(<span class="st">"cytomining/cytominergallery"</span>, <span class="dt">dependencies =</span> <span class="ot">TRUE</span>, <span class="dt">build_vignettes =</span> <span class="ot">TRUE</span>, <span class="dt">force =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/install_github">install_github</a></span>(<span class="st">"cytomining/cytominergallery"</span>, <span class="dt">dependencies =</span> <span class="ot">TRUE</span>, <span class="dt">build_vignettes =</span> <span class="ot">TRUE</span>, <span class="dt">force =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p>Occasionally, the <code>Suggests</code> dependencies <a href="https://github.com/hadley/devtools/issues/1370">may not get installed</a>, depending on your system, so you’d need to install those explicitly.</p>
 <p>Browse vignettes (launches in default browser):</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">browseVignettes</span>()</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">browseVignettes</span>()</a></code></pre></div>
 <p>Search for “Vignettes in package cytominergallery” and click on the link <code>HTML</code> to view the vignettes.</p>
+</section></section>
 </div>
-</div>
-
-  </div>
 
   <div class="col-md-3" id="sidebar">
     <h2>Links</h2>
@@ -129,7 +123,7 @@ devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocument
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="http://hadley.github.io/pkgdown/">pkgdown</a>.</p>
+  <p>Site built with <a href="http://pkgdown.r-lib.org/">pkgdown</a>.</p>
 </div>
 
       </footer>

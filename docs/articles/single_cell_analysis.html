@@ -29,7 +29,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
 <li>
-  <a href="..//index.html">
+  <a href="../index.html">
     <span class="fa fa-home fa-lg"></span>
      
   </a>
@@ -78,7 +78,7 @@
       <h1>Analyze single-cell data</h1>
                         <h4 class="author">Allen Goodman and Shantanu Singh</h4>
             
-            <h4 class="date">2017-10-03</h4>
+            <h4 class="date">2018-01-26</h4>
           </div>
 
     
@@ -91,97 +91,1640 @@
 <p>The images were analyzed using <a href="http://cellprofiler.org">CellProfiler</a>. The CellProfiler pipelines and complete set of instructions to generate the data are provided in <a href="http://jbx.sagepub.com/content/18/10/1321">(Ljosa 2013)</a>.</p>
 <p>Here, we analyze the single-cell data to perform a simple operation: summarizing them into per-well measurements by computing averages. This summarized data will later be used to predict mechanism-of-action of the compounds (see the <code>predict_moa</code> vignette.)</p>
 <p>This vignette assumes that the single-cell data <a href="https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite" class="uri">https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite</a> has been downloaded into <code>~/Downloads</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(dplyr)
-<span class="kw">library</span>(ggplot2)
-<span class="kw">library</span>(magrittr)
-<span class="kw">library</span>(stringr)</code></pre></div>
-<div id="load-data" class="section level1">
-<h1 class="hasAnchor">
-<a href="#load-data" class="anchor"></a>Load data</h1>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">library</span>(ggplot2)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">library</span>(magrittr)</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">library</span>(stringr)</a></code></pre></div>
+<section id="load-data" class="level1"><h1>Load data</h1>
 <p>First, load the data! The data is contained in 4 tables named <code>Image</code>, <code>Cytoplasm</code>, <code>Cells</code>, and <code>Nuclei</code>. The code below joins these tables to create a single table named <code>object</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">backend &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">Sys.getenv</span>(<span class="st">"HOME"</span>), <span class="st">"Downloads"</span>, <span class="st">"ljosa_jbiomolscreen_2013.sqlite"</span>)
-
-db &lt;-<span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/src_dbi.html">src_sqlite</a></span>(<span class="dt">path =</span> backend)
-
-image &lt;-<span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Image"</span>)
-
-object &lt;-
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Cells"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Cytoplasm"</span>),
-                    <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>, <span class="st">"ObjectNumber"</span>)) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Nuclei"</span>),
-                    <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>, <span class="st">"ObjectNumber"</span>))
-
-object <span class="op">%&lt;&gt;%</span><span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(image, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>))</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">backend &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">Sys.getenv</span>(<span class="st">"HOME"</span>), <span class="st">"Downloads"</span>, <span class="st">"ljosa_jbiomolscreen_2013.sqlite"</span>)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">db &lt;-<span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/src_dbi.html">src_sqlite</a></span>(<span class="dt">path =</span> backend)</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">image &lt;-<span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Image"</span>)</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">object &lt;-</a>
+<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Cells"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Cytoplasm"</span>),</a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">                    <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>, <span class="st">"ObjectNumber"</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/tbl.html">tbl</a></span>(<span class="dt">src =</span> db, <span class="st">"Nuclei"</span>),</a>
+<a class="sourceLine" id="cb2-12" data-line-number="12">                    <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>, <span class="st">"ObjectNumber"</span>))</a>
+<a class="sourceLine" id="cb2-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb2-14" data-line-number="14">object <span class="op">%&lt;&gt;%</span><span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(image, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">"TableNumber"</span>, <span class="st">"ImageNumber"</span>))</a></code></pre></div>
 <p>In this table, the measurement columns start with <code>Nuclei_</code>, <code>Cells_</code>, or <code>Cytoplasm_</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(object) <span class="op">%&gt;%</span>
-<span class="st">  </span>stringr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">variables &lt;-</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="st">  </span><span class="kw">colnames</span>(object) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="st">  </span>stringr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>How many variables?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(<span class="kw">length</span>(variables))</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">print</span>(<span class="kw">length</span>(variables))</a></code></pre></div>
 <pre><code>## [1] 516</code></pre>
 <p>How many cells?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">object <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>() <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">caption =</span> <span class="st">"No. of cells"</span>)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">object <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">caption =</span> <span class="st">"No. of cells"</span>)</a></code></pre></div>
 <table class="table">
+<caption>No. of cells</caption>
 <thead><tr class="header">
-<th align="right">n</th>
+<th style="text-align: right;">n</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">14821</td>
+<td style="text-align: right;">14821</td>
 </tr></tbody>
 </table>
 <p>Note that this is a smaller version of the BBBC021 dataset. The full dataset is here <a href="https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite" class="uri">https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite</a>.</p>
 <p>Before aggregating the data, let’s filter it down to one well and plot the histogram of a single feature:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">object <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Plate <span class="op">==</span><span class="st"> "Week1_22123"</span> <span class="op">&amp;&amp;</span><span class="st"> </span>Image_Metadata_Well <span class="op">==</span><span class="st"> "E04"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(Nuclei_Intensity_IntegratedIntensity_CorrDAPI) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>() <span class="op">%&gt;%</span><span class="st"> </span>{
-    <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(., <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Nuclei_Intensity_IntegratedIntensity_CorrDAPI)) <span class="op">+</span>
-<span class="st">      </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_histogram">geom_histogram</a></span>(<span class="dt">binwidth =</span> <span class="dv">5</span>)
-    }</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">object <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Plate <span class="op">==</span><span class="st"> "Week1_22123"</span> <span class="op">&amp;&amp;</span><span class="st"> </span>Image_Metadata_Well <span class="op">==</span><span class="st"> "E04"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(Nuclei_Intensity_IntegratedIntensity_CorrDAPI) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>() <span class="op">%&gt;%</span><span class="st"> </span>{</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">    <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(., <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Nuclei_Intensity_IntegratedIntensity_CorrDAPI)) <span class="op">+</span></a>
+<a class="sourceLine" id="cb7-6" data-line-number="6"><span class="st">      </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_histogram">geom_histogram</a></span>(<span class="dt">binwidth =</span> <span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">    }</a></code></pre></div>
 <p><img src="single_cell_analysis_files/figure-html/unnamed-chunk-4-1.png" width="480"></p>
-</div>
-<div id="summarize-measurements-per-well" class="section level1">
-<h1 class="hasAnchor">
-<a href="#summarize-measurements-per-well" class="anchor"></a>Summarize measurements per well</h1>
+</section><section id="summarize-measurements-per-well" class="level1"><h1>Summarize measurements per well</h1>
 <p>Now let’s summarize the data by grouping by well and computing averages.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/aggregate">aggregate</a></span>(
-    <span class="dt">population =</span> object,
-    <span class="dt">variables =</span> variables,
-    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Plate"</span>, <span class="st">"Image_Metadata_Well"</span>),
-    <span class="dt">operation =</span> <span class="st">"mean"</span>
-  )
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/aggregate">aggregate</a></span>(</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    <span class="dt">population =</span> object,</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Plate"</span>, <span class="st">"Image_Metadata_Well"</span>),</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">    <span class="dt">operation =</span> <span class="st">"mean"</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">  )</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">profiles <span class="op">%&lt;&gt;%</span></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()</a></code></pre></div>
+<pre><code>## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
 
-profiles <span class="op">%&lt;&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
 
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning
+
+## Warning: Missing values are always removed in SQL.
+## Use `AVG(x, na.rm = TRUE)` to silence this warning</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">variables &lt;-</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>How many wells?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>() <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">caption =</span> <span class="st">"No. of wells"</span>)</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">caption =</span> <span class="st">"No. of wells"</span>)</a></code></pre></div>
 <table class="table">
+<caption>No. of wells</caption>
 <thead><tr class="header">
-<th align="right">n</th>
+<th style="text-align: right;">n</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">30</td>
+<td style="text-align: right;">30</td>
 </tr></tbody>
 </table>
 <p>The full version of this dataset is used in the vignette <code>predict_moa</code> to predict the mechanism-of-action of compounds.</p>
 <p>Before we move on to that, let’s plot the relationship between a pair of variables from this summarized data</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p &lt;-
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(profiles, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Cells_AreaShape_Area_mean, Nuclei_AreaShape_Area_mean)) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_hex">geom_hex</a></span>()
-
-<span class="kw">print</span>(p)</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">p &lt;-</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(profiles, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) <span class="op">+</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_hex">geom_hex</a></span>()</a>
+<a class="sourceLine" id="cb12-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb12-5" data-line-number="5"><span class="kw">print</span>(p)</a></code></pre></div>
 <p><img src="single_cell_analysis_files/figure-html/unnamed-chunk-7-1.png" width="576"></p>
-</div>
+</section>
 </div>
   </div>
 
@@ -204,7 +1747,7 @@ variables &lt;-
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="http://hadley.github.io/pkgdown/">pkgdown</a>.</p>
+  <p>Site built with <a href="http://pkgdown.r-lib.org/">pkgdown</a>.</p>
 </div>
 
       </footer>

@@ -140,7 +140,7 @@ Before we move on to that, let's plot the relationship between a pair of variabl
 
 ```{r fig.width=6, fig.height=5, message=FALSE}
 p <-
-  ggplot(profiles, aes(Cells_AreaShape_Area_mean, Nuclei_AreaShape_Area_mean)) +
+  ggplot(profiles, aes(Cells_AreaShape_Area, Nuclei_AreaShape_Area)) +
   geom_hex()
 
 print(p)
