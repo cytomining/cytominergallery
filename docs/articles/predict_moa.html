@@ -29,7 +29,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
 <li>
-  <a href="..//index.html">
+  <a href="../index.html">
     <span class="fa fa-home fa-lg"></span>
      
   </a>
@@ -78,1373 +78,1360 @@
       <h1>Predict compounds mechanism-of-action by morphological profiling</h1>
                         <h4 class="author">Allen Goodman and Shantanu Singh</h4>
             
-            <h4 class="date">2017-10-03</h4>
+            <h4 class="date">2018-01-26</h4>
           </div>
 
     
     
 <div class="contents">
 <p>This vignette demonstrates predicting compound mechanism-of-action using morphological profiling data. See the vignette <code>single_cell_analysis</code> for details about this dataset.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(dplyr)
-<span class="kw">library</span>(magrittr)
-<span class="kw">library</span>(ggplot2)
-<span class="kw">library</span>(stringr)
-<span class="kw">library</span>(cytominergallery)</code></pre></div>
-<div id="load-data" class="section level1">
-<h1 class="hasAnchor">
-<a href="#load-data" class="anchor"></a>Load data</h1>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">library</span>(magrittr)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">library</span>(ggplot2)</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">library</span>(stringr)</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">library</span>(cytominergallery)</a></code></pre></div>
+<section id="load-data" class="level1"><h1>Load data</h1>
 <p>Per-well profiles computed in <code>single_cell_analysis</code> are loaded, as well as metadata associated with these profiles (obtained from <a href="https://data.broadinstitute.org/bbbc/BBBC021/">BBBC021</a>)</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"ljosa_jbiomolscreen_2013_per_well_mean.csv"</span>,
-                <span class="dt">package =</span> <span class="st">"cytominergallery"</span>))
-
-moa &lt;-
-<span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"BBBC021_v1_moa.csv"</span>,
-                              <span class="dt">package =</span> <span class="st">"cytominergallery"</span>)) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="dt">Image_Metadata_Compound =</span> compound,
-                <span class="dt">Image_Metadata_Concentration =</span> concentration,
-                <span class="dt">Image_Metadata_MoA =</span> moa
-  )
-
-metadata &lt;-
-<span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"BBBC021_v1_image.csv"</span>,
-                              <span class="dt">package =</span> <span class="st">"cytominergallery"</span>)) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="dt">Image_Metadata_Plate =</span> Image_Metadata_Plate_DAPI,
-                <span class="dt">Image_Metadata_Well =</span> Image_Metadata_Well_DAPI
-  ) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/select_helpers.html">matches</a></span>(<span class="st">"^Image_Metadata"</span>)) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(moa) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>()
-
-profiles <span class="op">%&lt;&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(metadata)
-
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"ljosa_jbiomolscreen_2013_per_well_mean.csv"</span>,</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">                <span class="dt">package =</span> <span class="st">"cytominergallery"</span>))</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">moa &lt;-</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"BBBC021_v1_moa.csv"</span>,</a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">                              <span class="dt">package =</span> <span class="st">"cytominergallery"</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="dt">Image_Metadata_Compound =</span> compound,</a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">                <span class="dt">Image_Metadata_Concentration =</span> concentration,</a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">                <span class="dt">Image_Metadata_MoA =</span> moa</a>
+<a class="sourceLine" id="cb2-11" data-line-number="11">  )</a>
+<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb2-13" data-line-number="13">metadata &lt;-</a>
+<a class="sourceLine" id="cb2-14" data-line-number="14"><span class="st">  </span>readr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/readr/topics/read_delim">read_csv</a></span>(<span class="kw">system.file</span>(<span class="st">"extdata"</span>, <span class="st">"BBBC021_v1_image.csv"</span>,</a>
+<a class="sourceLine" id="cb2-15" data-line-number="15">                              <span class="dt">package =</span> <span class="st">"cytominergallery"</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="dt">Image_Metadata_Plate =</span> Image_Metadata_Plate_DAPI,</a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">                <span class="dt">Image_Metadata_Well =</span> Image_Metadata_Well_DAPI</a>
+<a class="sourceLine" id="cb2-18" data-line-number="18">  ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-19" data-line-number="19"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/select_helpers.html">matches</a></span>(<span class="st">"^Image_Metadata"</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(moa) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>()</a>
+<a class="sourceLine" id="cb2-22" data-line-number="22"></a>
+<a class="sourceLine" id="cb2-23" data-line-number="23">profiles <span class="op">%&lt;&gt;%</span></a>
+<a class="sourceLine" id="cb2-24" data-line-number="24"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/join.html">inner_join</a></span>(metadata)</a>
+<a class="sourceLine" id="cb2-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb2-26" data-line-number="26">variables &lt;-</a>
+<a class="sourceLine" id="cb2-27" data-line-number="27"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb2-28" data-line-number="28"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>How many compounds?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>(Image_Metadata_Compound) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">tally</a></span>() <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of compounds</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>(Image_Metadata_Compound) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">tally</a></span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of compounds</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">Number of compounds</th>
+<th style="text-align: right;">Number of compounds</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">38</td>
+<td style="text-align: right;">38</td>
 </tr></tbody>
 </table>
 <p>How many unique treatments (compound-concentration pairs)?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>(Image_Metadata_Compound, Image_Metadata_Concentration) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">tally</a></span>() <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of unique treatments</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span>(Image_Metadata_Compound, Image_Metadata_Concentration) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">tally</a></span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of unique treatments</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">Number of unique treatments</th>
+<th style="text-align: right;">Number of unique treatments</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">103</td>
+<td style="text-align: right;">103</td>
 </tr></tbody>
 </table>
 <p>How many replicates per unique treatment?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>(Image_Metadata_Compound, Image_Metadata_Concentration) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of replicates</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>(Image_Metadata_Compound, Image_Metadata_Concentration) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of replicates</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Image_Metadata_Compound</th>
-<th align="right">Image_Metadata_Concentration</th>
-<th align="right">Number of replicates</th>
+<th style="text-align: left;">Image_Metadata_Compound</th>
+<th style="text-align: right;">Image_Metadata_Concentration</th>
+<th style="text-align: right;">Number of replicates</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">ALLN</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">ALLN</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">ALLN</td>
-<td align="right">100.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">ALLN</td>
+<td style="text-align: right;">100.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">alsterpaullone</td>
-<td align="right">1.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">alsterpaullone</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="even">
-<td align="left">alsterpaullone</td>
-<td align="right">3.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">alsterpaullone</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="odd">
-<td align="left">anisomycin</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">anisomycin</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">anisomycin</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">anisomycin</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-A</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-A</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-A</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-A</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-A</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-A</td>
-<td align="right">30.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-A</td>
+<td style="text-align: right;">30.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-C</td>
-<td align="right">0.001</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-C</td>
-<td align="right">0.003</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-C</td>
-<td align="right">0.010</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-C</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-C</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-C</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-C</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-C</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-J</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-J</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-J</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-J</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-J</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-J</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-U</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-U</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ-U</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-U</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ-U</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ-U</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ138</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ138</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ138</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ138</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ138</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ138</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ138</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ138</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ138</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ138</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ258</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ258</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ258</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ258</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ258</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ258</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ841</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ841</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">AZ841</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ841</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">AZ841</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">AZ841</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">bryostatin</td>
-<td align="right">0.300</td>
-<td align="right">2</td>
+<td style="text-align: left;">bryostatin</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="even">
-<td align="left">camptothecin</td>
-<td align="right">0.003</td>
-<td align="right">3</td>
+<td style="text-align: left;">camptothecin</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">camptothecin</td>
-<td align="right">0.010</td>
-<td align="right">3</td>
+<td style="text-align: left;">camptothecin</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">camptothecin</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">camptothecin</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">chlorambucil</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">chlorambucil</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">cisplatin</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cisplatin</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">colchicine</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">colchicine</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">cyclohexamide</td>
-<td align="right">5.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cyclohexamide</td>
+<td style="text-align: right;">5.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">cyclohexamide</td>
-<td align="right">15.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cyclohexamide</td>
+<td style="text-align: right;">15.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">cyclohexamide</td>
-<td align="right">50.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cyclohexamide</td>
+<td style="text-align: right;">50.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">cytochalasin B</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cytochalasin B</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">cytochalasin B</td>
-<td align="right">30.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">cytochalasin B</td>
+<td style="text-align: right;">30.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">cytochalasin D</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">cytochalasin D</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">demecolcine</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">demecolcine</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">demecolcine</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">demecolcine</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">demecolcine</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">demecolcine</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">demecolcine</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">demecolcine</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">docetaxel</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">docetaxel</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">docetaxel</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">docetaxel</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">docetaxel</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">docetaxel</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">emetine</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">emetine</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">emetine</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">emetine</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">emetine</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">emetine</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">epothilone B</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">epothilone B</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">epothilone B</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">epothilone B</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">epothilone B</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">epothilone B</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">etoposide</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">etoposide</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">etoposide</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">etoposide</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">etoposide</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">etoposide</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">floxuridine</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">floxuridine</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">floxuridine</td>
-<td align="right">30.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">floxuridine</td>
+<td style="text-align: right;">30.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">lactacystin</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">lactacystin</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">latrunculin B</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">latrunculin B</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">latrunculin B</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">latrunculin B</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">methotrexate</td>
-<td align="right">10.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">methotrexate</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">mevinolin/lovastatin</td>
-<td align="right">1.500</td>
-<td align="right">3</td>
+<td style="text-align: left;">mevinolin/lovastatin</td>
+<td style="text-align: right;">1.500</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">mevinolin/lovastatin</td>
-<td align="right">5.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">mevinolin/lovastatin</td>
+<td style="text-align: right;">5.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">mevinolin/lovastatin</td>
-<td align="right">15.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">mevinolin/lovastatin</td>
+<td style="text-align: right;">15.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">MG-132</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">MG-132</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">MG-132</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">MG-132</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">mitomycin C</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitomycin C</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">mitomycin C</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitomycin C</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">mitomycin C</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitomycin C</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">mitomycin C</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitomycin C</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">mitoxantrone</td>
-<td align="right">0.003</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitoxantrone</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">mitoxantrone</td>
-<td align="right">0.010</td>
-<td align="right">3</td>
+<td style="text-align: left;">mitoxantrone</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">nocodazole</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">nocodazole</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">nocodazole</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">nocodazole</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">PD-169316</td>
-<td align="right">3.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">PD-169316</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="even">
-<td align="left">PD-169316</td>
-<td align="right">10.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">PD-169316</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="odd">
-<td align="left">PP-2</td>
-<td align="right">3.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">PP-2</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="even">
-<td align="left">PP-2</td>
-<td align="right">10.000</td>
-<td align="right">2</td>
+<td style="text-align: left;">PP-2</td>
+<td style="text-align: right;">10.000</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr class="odd">
-<td align="left">proteasome inhibitor I</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">proteasome inhibitor I</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">proteasome inhibitor I</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">proteasome inhibitor I</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">simvastatin</td>
-<td align="right">2.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">simvastatin</td>
+<td style="text-align: right;">2.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">simvastatin</td>
-<td align="right">6.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">simvastatin</td>
+<td style="text-align: right;">6.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">simvastatin</td>
-<td align="right">20.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">simvastatin</td>
+<td style="text-align: right;">20.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">taxol</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">taxol</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">taxol</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">taxol</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">taxol</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">taxol</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">vincristine</td>
-<td align="right">0.003</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">vincristine</td>
-<td align="right">0.010</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">vincristine</td>
-<td align="right">0.030</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">vincristine</td>
-<td align="right">0.100</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">vincristine</td>
-<td align="right">0.300</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">0.300</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
-<td align="left">vincristine</td>
-<td align="right">1.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
-<td align="left">vincristine</td>
-<td align="right">3.000</td>
-<td align="right">3</td>
+<td style="text-align: left;">vincristine</td>
+<td style="text-align: right;">3.000</td>
+<td style="text-align: right;">3</td>
 </tr>
 </tbody>
 </table>
 <p>How many DMSO wells per plate?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">==</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>(Image_Metadata_Plate) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of DMSO wells</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">==</span><span class="st"> "DMSO"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/tally.html">count</a></span>(Image_Metadata_Plate) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">rename</a></span>(<span class="st">`</span><span class="dt">Number of DMSO wells</span><span class="st">`</span> =<span class="st"> </span>n) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Image_Metadata_Plate</th>
-<th align="right">Number of DMSO wells</th>
+<th style="text-align: left;">Image_Metadata_Plate</th>
+<th style="text-align: right;">Number of DMSO wells</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">Week1_22123</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22123</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week1_22141</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22141</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week1_22161</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22161</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week1_22361</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22361</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week1_22381</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22381</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week1_22401</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week1_22401</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week10_40111</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week10_40111</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week10_40115</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week10_40115</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week10_40119</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week10_40119</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week2_24121</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24121</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week2_24141</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24141</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week2_24161</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24161</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week2_24361</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24361</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week2_24381</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24381</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week2_24401</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week2_24401</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week3_25421</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25421</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week3_25441</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25441</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week3_25461</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25461</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week3_25681</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25681</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week3_25701</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25701</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week3_25721</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week3_25721</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week4_27481</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27481</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week4_27521</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27521</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week4_27542</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27542</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week4_27801</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27801</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week4_27821</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27821</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week4_27861</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week4_27861</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week5_28901</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_28901</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week5_28921</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_28921</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week5_28961</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_28961</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week5_29301</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_29301</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week5_29321</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_29321</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week5_29341</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week5_29341</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week6_31641</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_31641</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week6_31661</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_31661</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week6_31681</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_31681</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week6_32061</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_32061</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week6_32121</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_32121</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week6_32161</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week6_32161</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week7_34341</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week7_34341</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week7_34381</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week7_34381</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week7_34641</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week7_34641</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week7_34661</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week7_34661</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week7_34681</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week7_34681</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week8_38203</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week8_38203</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week8_38221</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week8_38221</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week8_38241</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week8_38241</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week8_38341</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week8_38341</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week8_38342</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week8_38342</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week9_39206</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39206</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week9_39221</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39221</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week9_39222</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39222</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week9_39282</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39282</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="even">
-<td align="left">Week9_39283</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39283</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr class="odd">
-<td align="left">Week9_39301</td>
-<td align="right">6</td>
+<td style="text-align: left;">Week9_39301</td>
+<td style="text-align: right;">6</td>
 </tr>
 </tbody>
-</table>
-</div>
-<div id="feature-selection" class="section level1">
-<h1 class="hasAnchor">
-<a href="#feature-selection" class="anchor"></a>Feature selection</h1>
+</table></section><section id="feature-selection" class="level1"><h1>Feature selection</h1>
 <p>Next, lets filter the set of features based on various measures of quality</p>
 <p>Remove features that have near-zero variance. This dataset doesn’t have any such features, so nothing is removed.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(
-    <span class="dt">population =</span> profiles,
-    <span class="dt">variables =</span> variables,
-    <span class="dt">sample =</span> profiles,
-    <span class="dt">operation =</span> <span class="st">"variance_threshold"</span>
-  ) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()
-
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">    <span class="dt">population =</span> profiles,</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">    <span class="dt">sample =</span> profiles,</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">    <span class="dt">operation =</span> <span class="st">"variance_threshold"</span></a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">  ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()</a>
+<a class="sourceLine" id="cb7-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10">variables &lt;-</a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>Remove features that have poor correlation across replicates. To do so, lets first compute the correlations.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">doParallel<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/doParallel/topics/registerDoParallel">registerDoParallel</a></span>(<span class="dt">cores =</span> <span class="dv">2</span>)
-
-feature_replicate_correlations &lt;-
-<span class="st">  </span>profiles <span class="op">%&gt;%</span>
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_importance">variable_importance</a></span>(
-    <span class="dt">variables =</span> variables,
-    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Compound"</span>, <span class="st">"Image_Metadata_Concentration"</span>),
-    <span class="dt">replicates =</span> <span class="dv">3</span>,
-    <span class="dt">cores =</span> <span class="dv">2</span>)</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">doParallel<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/doParallel/topics/registerDoParallel">registerDoParallel</a></span>(<span class="dt">cores =</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">feature_replicate_correlations &lt;-</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="st">  </span>profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_importance">variable_importance</a></span>(</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Compound"</span>, <span class="st">"Image_Metadata_Concentration"</span>),</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">    <span class="dt">replicates =</span> <span class="dv">3</span>,</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">    <span class="dt">cores =</span> <span class="dv">2</span>)</a></code></pre></div>
 <p>What the does the distribution look like?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(feature_replicate_correlations, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(median))  <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/stat_ecdf">stat_ecdf</a></span>() <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> <span class="fl">0.5</span>, <span class="dt">color =</span> <span class="st">"red"</span>) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="st">"median replicate correlation (Pearson)"</span>) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">ylab</a></span>(<span class="st">"F(x)"</span>)</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(feature_replicate_correlations, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(median))  <span class="op">+</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/stat_ecdf">stat_ecdf</a></span>() <span class="op">+</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> <span class="fl">0.5</span>, <span class="dt">color =</span> <span class="st">"red"</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="st">"median replicate correlation (Pearson)"</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">ylab</a></span>(<span class="st">"F(x)"</span>)</a></code></pre></div>
 <p><img src="predict_moa_files/figure-html/unnamed-chunk-8-1.png" width="384"></p>
 <p>Here, we select a threshold and remove features that have a replicate correlation lower than that threshold</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&lt;&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/se-deprecated.html">select_</a></span>(<span class="dt">.dots =</span> <span class="kw"><a href="http://dplyr.tidyverse.org/reference/setops.html">setdiff</a></span>(<span class="dt">x =</span> <span class="kw">colnames</span>(profiles),
-                          <span class="dt">y =</span> feature_replicate_correlations <span class="op">%&gt;%</span>
-<span class="st">                            </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(median <span class="op">&lt;</span><span class="st"> </span><span class="fl">0.5</span>) <span class="op">%&gt;%</span>
-<span class="st">                            </span>magrittr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/magrittr/topics/aliases">extract2</a></span>(<span class="st">"variable"</span>))
-          )
-
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">profiles <span class="op">%&lt;&gt;%</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/se-deprecated.html">select_</a></span>(<span class="dt">.dots =</span> <span class="kw"><a href="http://dplyr.tidyverse.org/reference/setops.html">setdiff</a></span>(<span class="dt">x =</span> <span class="kw">colnames</span>(profiles),</a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">                          <span class="dt">y =</span> feature_replicate_correlations <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="st">                            </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(median <span class="op">&lt;</span><span class="st"> </span><span class="fl">0.5</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="st">                            </span>magrittr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/magrittr/topics/aliases">extract2</a></span>(<span class="st">"variable"</span>))</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">          )</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">variables &lt;-</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-10" data-line-number="10"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>Filter based on correlation between features. The morphological features extracted contain several highly correlated groups. We want to to prune the set of features, retaining only one feature from each of these highly correlated sets. The function <code>correlation_threshold</code> provides an approximate (greedy) solution to this problem. After excluding the features, no pair of features have a correlation greater than <code>cutoff</code> indicated below.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(
-    <span class="dt">population =</span> profiles,
-    <span class="dt">variables =</span> variables,
-    <span class="dt">sample =</span> profiles,
-    <span class="dt">operation =</span> <span class="st">"correlation_threshold"</span>,
-    <span class="dt">cutoff =</span> <span class="fl">0.95</span>) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()</code></pre></div>
-<pre><code>## INFO [2017-10-03 20:19:35] excluded:
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MaximumRadius
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MeanRadius
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MedianRadius
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MinFeretDiameter
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MinorAxisLength
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MaxIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MaxIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MeanIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MeanIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MeanIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MedianIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MedianIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MinIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_StdIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_StdIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_StdIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_StdIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_UpperQuartileIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_UpperQuartileIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_NumberOfNeighbors_3
-## INFO [2017-10-03 20:19:35]    Cells_Texture_SumVariance_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_Variance_CorrActin_10_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_Variance_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_Variance_CorrTub_10_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_Area
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MajorAxisLength
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MaxFeretDiameter
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MaximumRadius
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MeanRadius
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MedianRadius
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MinFeretDiameter
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_MinorAxisLength
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_Solidity
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_Zernike_0_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_IntegratedIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_IntegratedIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_IntegratedIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MADIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MADIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MassDisplacement_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MassDisplacement_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MaxIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MaxIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MaxIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MeanIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MeanIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MeanIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MeanIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MedianIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MedianIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MinIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MinIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MinIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MinIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_StdIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_StdIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_StdIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_StdIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_UpperQuartileIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_UpperQuartileIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_DifferenceEntropy_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_DifferenceVariance_CorrTub_10_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_DifferenceVariance_CorrTub_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_InfoMeas2_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_SumAverage_CorrTub_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_Variance_CorrTub_10_0
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MajorAxisLength
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MaxFeretDiameter
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MeanRadius
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MinorAxisLength
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Perimeter
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_3_3
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_4_4
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_5_3
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_6_6
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_7_3
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_7_5
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_7_7
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_9_7
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_9_9
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_IntegratedIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_IntegratedIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_IntegratedIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_IntegratedIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_LowerQuartileIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_LowerQuartileIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MADIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MADIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensityEdge_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MeanIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MedianIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MedianIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MedianIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MinIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MinIntensityEdge_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MinIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MinIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MinIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_StdIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_StdIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_StdIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_StdIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_UpperQuartileIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_UpperQuartileIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_UpperQuartileIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Nuclei_Neighbors_PercentTouching_10
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_InfoMeas2_CorrDAPI_3_0
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_Variance_CorrDAPI_3_0
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_Area
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MajorAxisLength
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_MaxFeretDiameter
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_LowerQuartileIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MADIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MaxIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MinIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MADIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_AngleBetweenNeighbors_10
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_FirstClosestDistance_10
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_NumberOfNeighbors_10
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_SecondClosestDistance_10
-## INFO [2017-10-03 20:19:35]    Cells_Texture_Contrast_CorrTub_10_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_InfoMeas1_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_SumVariance_CorrTub_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_AreaShape_Extent
-## INFO [2017-10-03 20:19:35]    Cells_AreaShape_Perimeter
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_IntegratedIntensity_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MeanIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_LowerQuartileIntensity_CorrTub
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Intensity_MaxIntensityEdge_CorrTub
-## INFO [2017-10-03 20:19:35]    Cells_Intensity_MaxIntensityEdge_CorrActin
-## INFO [2017-10-03 20:19:35]    Cells_Texture_AngularSecondMoment_CorrTub_3_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_Contrast_CorrActin_10_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_DifferenceVariance_CorrActin_10_0
-## INFO [2017-10-03 20:19:35]    Cells_Texture_DifferenceEntropy_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Cytoplasm_Texture_AngularSecondMoment_CorrTub_10_0
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MaximumRadius
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_MedianRadius
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_3_1
-## INFO [2017-10-03 20:19:35]    Nuclei_AreaShape_Zernike_5_5
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MADIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensityEdge_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Nuclei_Intensity_MaxIntensity_CorrDAPI
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_AngleBetweenNeighbors_3
-## INFO [2017-10-03 20:19:35]    Nuclei_Neighbors_AngleBetweenNeighbors_10
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_FirstClosestDistance_3
-## INFO [2017-10-03 20:19:35]    Nuclei_Neighbors_FirstClosestDistance_10
-## INFO [2017-10-03 20:19:35]    Cells_Neighbors_SecondClosestDistance_3
-## INFO [2017-10-03 20:19:35]    Nuclei_Neighbors_SecondClosestDistance_10
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_AngularSecondMoment_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_InfoMeas1_CorrActin_10_0
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_InfoMeas1_CorrActin_3_0
-## INFO [2017-10-03 20:19:35]    Nuclei_Texture_InfoMeas1_CorrTub_3_0</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
-</div>
-<div id="normalize-with-reference-to-dmso" class="section level1">
-<h1 class="hasAnchor">
-<a href="#normalize-with-reference-to-dmso" class="anchor"></a>Normalize with reference to DMSO</h1>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">    <span class="dt">population =</span> profiles,</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">    <span class="dt">sample =</span> profiles,</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">    <span class="dt">operation =</span> <span class="st">"correlation_threshold"</span>,</a>
+<a class="sourceLine" id="cb11-7" data-line-number="7">    <span class="dt">cutoff =</span> <span class="fl">0.95</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/compute.html">collect</a></span>()</a></code></pre></div>
+<pre><code>## INFO [2018-01-26 00:30:50] excluded:
+## INFO [2018-01-26 00:30:50]    Cells_AreaShape_MaximumRadius
+## INFO [2018-01-26 00:30:50]    Cells_AreaShape_MeanRadius
+## INFO [2018-01-26 00:30:50]    Cells_AreaShape_MedianRadius
+## INFO [2018-01-26 00:30:50]    Cells_AreaShape_MinFeretDiameter
+## INFO [2018-01-26 00:30:50]    Cells_AreaShape_MinorAxisLength
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MaxIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MaxIntensity_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MeanIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MeanIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MeanIntensity_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MedianIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MedianIntensity_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_MinIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_StdIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_StdIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_StdIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_StdIntensity_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_UpperQuartileIntensity_CorrActin
+## INFO [2018-01-26 00:30:50]    Cells_Intensity_UpperQuartileIntensity_CorrTub
+## INFO [2018-01-26 00:30:50]    Cells_Neighbors_NumberOfNeighbors_3
+## INFO [2018-01-26 00:30:50]    Cells_Texture_SumVariance_CorrActin_3_0
+## INFO [2018-01-26 00:30:50]    Cells_Texture_Variance_CorrActin_10_0
+## INFO [2018-01-26 00:30:50]    Cells_Texture_Variance_CorrActin_3_0
+## INFO [2018-01-26 00:30:50]    Cells_Texture_Variance_CorrTub_10_0
+## INFO [2018-01-26 00:30:50]    Cytoplasm_AreaShape_Area
+## INFO [2018-01-26 00:30:50]    Cytoplasm_AreaShape_MajorAxisLength
+## INFO [2018-01-26 00:30:50]    Cytoplasm_AreaShape_MaxFeretDiameter
+## INFO [2018-01-26 00:30:50]    Cytoplasm_AreaShape_MaximumRadius
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_MeanRadius
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_MedianRadius
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_MinFeretDiameter
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_MinorAxisLength
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_Solidity
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_Zernike_0_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_IntegratedIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_IntegratedIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_IntegratedIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MADIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MADIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MassDisplacement_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MassDisplacement_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MaxIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MaxIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MaxIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MeanIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MeanIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MeanIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MeanIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MedianIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MedianIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MinIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MinIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MinIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MinIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_StdIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_StdIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_StdIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_StdIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_UpperQuartileIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_UpperQuartileIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_DifferenceEntropy_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_DifferenceVariance_CorrTub_10_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_DifferenceVariance_CorrTub_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_InfoMeas2_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_SumAverage_CorrTub_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_Variance_CorrTub_10_0
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MajorAxisLength
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MaxFeretDiameter
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MeanRadius
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MinorAxisLength
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Perimeter
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_3_3
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_4_4
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_5_3
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_6_6
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_7_3
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_7_5
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_7_7
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_9_7
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_9_9
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_IntegratedIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_IntegratedIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_IntegratedIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_IntegratedIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_LowerQuartileIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_LowerQuartileIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MADIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MADIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensityEdge_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MeanIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MedianIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MedianIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MedianIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MinIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MinIntensityEdge_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MinIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MinIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MinIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_StdIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_StdIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_StdIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_StdIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_UpperQuartileIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_UpperQuartileIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_UpperQuartileIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Nuclei_Neighbors_PercentTouching_10
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_InfoMeas2_CorrDAPI_3_0
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_Variance_CorrDAPI_3_0
+## INFO [2018-01-26 00:30:51]    Cells_AreaShape_Area
+## INFO [2018-01-26 00:30:51]    Cells_AreaShape_MajorAxisLength
+## INFO [2018-01-26 00:30:51]    Cells_AreaShape_MaxFeretDiameter
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_LowerQuartileIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MADIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MaxIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MinIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MADIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_AngleBetweenNeighbors_10
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_FirstClosestDistance_10
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_NumberOfNeighbors_10
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_SecondClosestDistance_10
+## INFO [2018-01-26 00:30:51]    Cells_Texture_Contrast_CorrTub_10_0
+## INFO [2018-01-26 00:30:51]    Cells_Texture_InfoMeas1_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Cells_Texture_SumVariance_CorrTub_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_AreaShape_Extent
+## INFO [2018-01-26 00:30:51]    Cells_AreaShape_Perimeter
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_IntegratedIntensity_CorrActin
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MeanIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_LowerQuartileIntensity_CorrTub
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Intensity_MaxIntensityEdge_CorrTub
+## INFO [2018-01-26 00:30:51]    Cells_Intensity_MaxIntensityEdge_CorrActin
+## INFO [2018-01-26 00:30:51]    Cells_Texture_AngularSecondMoment_CorrTub_3_0
+## INFO [2018-01-26 00:30:51]    Cells_Texture_Contrast_CorrActin_10_0
+## INFO [2018-01-26 00:30:51]    Cells_Texture_DifferenceVariance_CorrActin_10_0
+## INFO [2018-01-26 00:30:51]    Cells_Texture_DifferenceEntropy_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Cytoplasm_Texture_AngularSecondMoment_CorrTub_10_0
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MaximumRadius
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_MedianRadius
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_3_1
+## INFO [2018-01-26 00:30:51]    Nuclei_AreaShape_Zernike_5_5
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MADIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensityEdge_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Nuclei_Intensity_MaxIntensity_CorrDAPI
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_AngleBetweenNeighbors_3
+## INFO [2018-01-26 00:30:51]    Nuclei_Neighbors_AngleBetweenNeighbors_10
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_FirstClosestDistance_3
+## INFO [2018-01-26 00:30:51]    Nuclei_Neighbors_FirstClosestDistance_10
+## INFO [2018-01-26 00:30:51]    Cells_Neighbors_SecondClosestDistance_3
+## INFO [2018-01-26 00:30:51]    Nuclei_Neighbors_SecondClosestDistance_10
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_AngularSecondMoment_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_InfoMeas1_CorrActin_10_0
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_InfoMeas1_CorrActin_3_0
+## INFO [2018-01-26 00:30:51]    Nuclei_Texture_InfoMeas1_CorrTub_3_0</code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1">variables &lt;-</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
+</section><section id="normalize-with-reference-to-dmso" class="level1"><h1>Normalize with reference to DMSO</h1>
 <p>There may be plate-to-plate variations, which can be compensated for to some extent by normalizing the features with respect to the DMSO wells per plate.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/normalize">normalize</a></span>(
-    <span class="dt">population =</span> profiles,
-    <span class="dt">variables =</span> variables,
-    <span class="dt">strata =</span>  <span class="kw">c</span>(<span class="st">"Image_Metadata_Plate"</span>),
-    <span class="dt">sample =</span> profiles <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">==</span><span class="st"> "DMSO"</span>)
-  )
-
-profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(
-      <span class="dt">population =</span> profiles,
-      <span class="dt">variables =</span> variables,
-      <span class="dt">operation =</span> <span class="st">"drop_na_columns"</span>
-  )
-
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
-</div>
-<div id="calculate-treatment-profiles-and-predict-mechanism-of-action" class="section level1">
-<h1 class="hasAnchor">
-<a href="#calculate-treatment-profiles-and-predict-mechanism-of-action" class="anchor"></a>Calculate treatment profiles and predict mechanism-of-action</h1>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/normalize">normalize</a></span>(</a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">    <span class="dt">population =</span> profiles,</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">    <span class="dt">strata =</span>  <span class="kw">c</span>(<span class="st">"Image_Metadata_Plate"</span>),</a>
+<a class="sourceLine" id="cb14-6" data-line-number="6">    <span class="dt">sample =</span> profiles <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">==</span><span class="st"> "DMSO"</span>)</a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">  )</a>
+<a class="sourceLine" id="cb14-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb14-9" data-line-number="9">profiles &lt;-</a>
+<a class="sourceLine" id="cb14-10" data-line-number="10"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/variable_select">variable_select</a></span>(</a>
+<a class="sourceLine" id="cb14-11" data-line-number="11">      <span class="dt">population =</span> profiles,</a>
+<a class="sourceLine" id="cb14-12" data-line-number="12">      <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb14-13" data-line-number="13">      <span class="dt">operation =</span> <span class="st">"drop_na_columns"</span></a>
+<a class="sourceLine" id="cb14-14" data-line-number="14">  )</a>
+<a class="sourceLine" id="cb14-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb14-16" data-line-number="16">variables &lt;-</a>
+<a class="sourceLine" id="cb14-17" data-line-number="17"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-18" data-line-number="18"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
+</section><section id="calculate-treatment-profiles-and-predict-mechanism-of-action" class="level1"><h1>Calculate treatment profiles and predict mechanism-of-action</h1>
 <p>We have selected features and normalized the data. We can now compute treatment profiles by averaging across replicates.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles &lt;-
-<span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/aggregate">aggregate</a></span>(
-    <span class="dt">population =</span> profiles,
-    <span class="dt">variables =</span> variables,
-    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Compound"</span>,
-               <span class="st">"Image_Metadata_Concentration"</span>,
-               <span class="st">"Image_Metadata_MoA"</span>),
-    <span class="dt">operation =</span> <span class="st">"mean"</span>
-  )
-
-variables &lt;-
-<span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1">profiles &lt;-</a>
+<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="st">  </span>cytominer<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/cytominer/topics/aggregate">aggregate</a></span>(</a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">    <span class="dt">population =</span> profiles,</a>
+<a class="sourceLine" id="cb15-4" data-line-number="4">    <span class="dt">variables =</span> variables,</a>
+<a class="sourceLine" id="cb15-5" data-line-number="5">    <span class="dt">strata =</span> <span class="kw">c</span>(<span class="st">"Image_Metadata_Compound"</span>,</a>
+<a class="sourceLine" id="cb15-6" data-line-number="6">               <span class="st">"Image_Metadata_Concentration"</span>,</a>
+<a class="sourceLine" id="cb15-7" data-line-number="7">               <span class="st">"Image_Metadata_MoA"</span>),</a>
+<a class="sourceLine" id="cb15-8" data-line-number="8">    <span class="dt">operation =</span> <span class="st">"mean"</span></a>
+<a class="sourceLine" id="cb15-9" data-line-number="9">  )</a>
+<a class="sourceLine" id="cb15-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb15-11" data-line-number="11">variables &lt;-</a>
+<a class="sourceLine" id="cb15-12" data-line-number="12"><span class="st">  </span><span class="kw">colnames</span>(profiles) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/stringr/topics/str_subset">str_subset</a></span>(<span class="st">"^Nuclei_|^Cells_|^Cytoplasm_"</span>)</a></code></pre></div>
 <p>Let’s visualize this data using t-SNE.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profiles <span class="op">%&lt;&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>)
-
-correlation &lt;-
-<span class="st">  </span>profiles <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/select_helpers.html">one_of</a></span>(variables)) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw">as.matrix</span>() <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw">t</span>() <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw">cor</span>()
-
-mechanism &lt;-<span class="st"> </span><span class="kw">as.character</span>(profiles<span class="op">$</span>Image_Metadata_MoA)
-
-<span class="kw">set.seed</span>(<span class="dv">123</span>)
-
-df &lt;-
-<span class="st">  </span>tibble<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tibble/topics/as_tibble">as_data_frame</a></span>(
-    tsne<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tsne/topics/tsne">tsne</a></span>(<span class="kw">as.dist</span>(<span class="dv">1</span><span class="op">-</span>correlation))
-    ) <span class="op">%&gt;%</span>
-<span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">mechanism =</span> mechanism)
-
-p &lt;-
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(df, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(V1, V2, <span class="dt">color=</span>mechanism)) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>() <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">ggtitle</a></span>(<span class="st">"t-SNE visualization of compound profiles"</span>)
-
-<span class="kw">print</span>(p)</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">profiles <span class="op">%&lt;&gt;%</span></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(Image_Metadata_Compound <span class="op">!=</span><span class="st"> "DMSO"</span>)</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">correlation &lt;-</a>
+<a class="sourceLine" id="cb16-5" data-line-number="5"><span class="st">  </span>profiles <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-6" data-line-number="6"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="kw"><a href="http://dplyr.tidyverse.org/reference/select_helpers.html">one_of</a></span>(variables)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7"><span class="st">  </span><span class="kw">as.matrix</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-8" data-line-number="8"><span class="st">  </span><span class="kw">t</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-9" data-line-number="9"><span class="st">  </span><span class="kw">cor</span>()</a>
+<a class="sourceLine" id="cb16-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb16-11" data-line-number="11">mechanism &lt;-<span class="st"> </span><span class="kw">as.character</span>(profiles<span class="op">$</span>Image_Metadata_MoA)</a>
+<a class="sourceLine" id="cb16-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb16-13" data-line-number="13"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb16-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb16-15" data-line-number="15">df &lt;-</a>
+<a class="sourceLine" id="cb16-16" data-line-number="16"><span class="st">  </span>tibble<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tibble/topics/as_tibble">as_data_frame</a></span>(</a>
+<a class="sourceLine" id="cb16-17" data-line-number="17">    tsne<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tsne/topics/tsne">tsne</a></span>(<span class="kw">as.dist</span>(<span class="dv">1</span><span class="op">-</span>correlation))</a>
+<a class="sourceLine" id="cb16-18" data-line-number="18">    ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-19" data-line-number="19"><span class="st">  </span><span class="kw"><a href="http://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">mechanism =</span> mechanism)</a>
+<a class="sourceLine" id="cb16-20" data-line-number="20"></a>
+<a class="sourceLine" id="cb16-21" data-line-number="21">p &lt;-</a>
+<a class="sourceLine" id="cb16-22" data-line-number="22"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(df, <span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(V1, V2, <span class="dt">color=</span>mechanism)) <span class="op">+</span></a>
+<a class="sourceLine" id="cb16-23" data-line-number="23"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>() <span class="op">+</span></a>
+<a class="sourceLine" id="cb16-24" data-line-number="24"><span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">ggtitle</a></span>(<span class="st">"t-SNE visualization of compound profiles"</span>)</a>
+<a class="sourceLine" id="cb16-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb16-26" data-line-number="26"><span class="kw">print</span>(p)</a></code></pre></div>
 <p><img src="predict_moa_files/figure-html/unnamed-chunk-13-1.png" width="768"></p>
 <p>The data clusters into mechanisms quite nicely. Let’s quantify this by evaluating how well we can predict mechanism-of-action by simply assigning a treatment the mechanism of its nearest neighbor. NOTE: A common mistake when analyzing this dataset is to not exclude other concentrations of the same compound when looking up the nearest neighbor. That is cheating! <code>mask</code> in the code below addresses this.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">compound &lt;-<span class="st"> </span>profiles<span class="op">$</span>Image_Metadata_Compound
-
-mask &lt;-<span class="st"> </span><span class="kw">as.integer</span>(<span class="kw">outer</span>(compound, compound, <span class="dt">FUN=</span><span class="st">"!="</span>))
-
-mask[mask <span class="op">==</span><span class="st"> </span><span class="dv">0</span>] &lt;-<span class="st"> </span><span class="op">-</span><span class="ot">Inf</span>
-
-correlation_masked &lt;-<span class="st"> </span>correlation <span class="op">*</span><span class="st"> </span>mask
-
-prediction &lt;-<span class="st"> </span><span class="kw">sapply</span>(<span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(correlation_masked),
-               <span class="cf">function</span>(i) mechanism[<span class="kw">order</span>(correlation_masked[i,],
-                                           <span class="dt">decreasing =</span> <span class="ot">TRUE</span>)[<span class="dv">1</span>]])
-
-confusion_matrix &lt;-<span class="st"> </span>caret<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/caret/topics/confusionMatrix">confusionMatrix</a></span>(prediction, mechanism)</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1">compound &lt;-<span class="st"> </span>profiles<span class="op">$</span>Image_Metadata_Compound</a>
+<a class="sourceLine" id="cb17-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">mask &lt;-<span class="st"> </span><span class="kw">as.integer</span>(<span class="kw">outer</span>(compound, compound, <span class="dt">FUN=</span><span class="st">"!="</span>))</a>
+<a class="sourceLine" id="cb17-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb17-5" data-line-number="5">mask[mask <span class="op">==</span><span class="st"> </span><span class="dv">0</span>] &lt;-<span class="st"> </span><span class="op">-</span><span class="ot">Inf</span></a>
+<a class="sourceLine" id="cb17-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb17-7" data-line-number="7">correlation_masked &lt;-<span class="st"> </span>correlation <span class="op">*</span><span class="st"> </span>mask</a>
+<a class="sourceLine" id="cb17-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb17-9" data-line-number="9">prediction &lt;-<span class="st"> </span><span class="kw">sapply</span>(<span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(correlation_masked),</a>
+<a class="sourceLine" id="cb17-10" data-line-number="10">               <span class="cf">function</span>(i) mechanism[<span class="kw">order</span>(correlation_masked[i,],</a>
+<a class="sourceLine" id="cb17-11" data-line-number="11">                                           <span class="dt">decreasing =</span> <span class="ot">TRUE</span>)[<span class="dv">1</span>]])</a>
+<a class="sourceLine" id="cb17-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb17-13" data-line-number="13">confusion_matrix &lt;-<span class="st"> </span>caret<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/caret/topics/confusionMatrix">confusionMatrix</a></span>(prediction, mechanism)</a></code></pre></div>
 <p>What’s the classification accuracy?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tibble<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tibble/topics/tribble">frame_data</a></span>(
-  <span class="op">~</span>metric, <span class="op">~</span>value,
-  <span class="st">"Accuracy"</span>, <span class="kw">sprintf</span>(<span class="st">"%.2f"</span>, confusion_matrix<span class="op">$</span>overall[<span class="st">"Accuracy"</span>]),
-  <span class="st">"95% CI"</span>, <span class="kw">sprintf</span>(<span class="st">"(%.2f, %.2f)"</span>, confusion_matrix<span class="op">$</span>overall[[<span class="st">"AccuracyLower"</span>]],
-                    confusion_matrix<span class="op">$</span>overall[[<span class="st">"AccuracyUpper"</span>]])
-  ) <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">digits =</span> <span class="dv">2</span>)</code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1">tibble<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/tibble/topics/tribble">frame_data</a></span>(</a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">  <span class="op">~</span>metric, <span class="op">~</span>value,</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">  <span class="st">"Accuracy"</span>, <span class="kw">sprintf</span>(<span class="st">"%.2f"</span>, confusion_matrix<span class="op">$</span>overall[<span class="st">"Accuracy"</span>]),</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4">  <span class="st">"95% CI"</span>, <span class="kw">sprintf</span>(<span class="st">"(%.2f, %.2f)"</span>, confusion_matrix<span class="op">$</span>overall[[<span class="st">"AccuracyLower"</span>]],</a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">                    confusion_matrix<span class="op">$</span>overall[[<span class="st">"AccuracyUpper"</span>]])</a>
+<a class="sourceLine" id="cb18-6" data-line-number="6">  ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb18-7" data-line-number="7"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>(<span class="dt">digits =</span> <span class="dv">2</span>)</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">metric</th>
-<th align="left">value</th>
+<th style="text-align: left;">metric</th>
+<th style="text-align: left;">value</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">Accuracy</td>
-<td align="left">0.82</td>
+<td style="text-align: left;">Accuracy</td>
+<td style="text-align: left;">0.82</td>
 </tr>
 <tr class="even">
-<td align="left">95% CI</td>
-<td align="left">(0.73, 0.89)</td>
+<td style="text-align: left;">95% CI</td>
+<td style="text-align: left;">(0.73, 0.89)</td>
 </tr>
 </tbody>
 </table>
 <p>What does the whole confusion matrix look like?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">confusion_matrix<span class="op">$</span>table <span class="op">%&gt;%</span>
-<span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1">confusion_matrix<span class="op">$</span>table <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-2" data-line-number="2"><span class="st">  </span>knitr<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/knitr/topics/kable">kable</a></span>()</a></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th></th>
-<th align="right">Actin disruptors</th>
-<th align="right">Aurora kinase inhibitors</th>
-<th align="right">Cholesterol-lowering</th>
-<th align="right">DNA damage</th>
-<th align="right">DNA replication</th>
-<th align="right">Eg5 inhibitors</th>
-<th align="right">Epithelial</th>
-<th align="right">Kinase inhibitors</th>
-<th align="right">Microtubule destabilizers</th>
-<th align="right">Microtubule stabilizers</th>
-<th align="right">Protein degradation</th>
-<th align="right">Protein synthesis</th>
+<th style="text-align: right;">Actin disruptors</th>
+<th style="text-align: right;">Aurora kinase inhibitors</th>
+<th style="text-align: right;">Cholesterol-lowering</th>
+<th style="text-align: right;">DNA damage</th>
+<th style="text-align: right;">DNA replication</th>
+<th style="text-align: right;">Eg5 inhibitors</th>
+<th style="text-align: right;">Epithelial</th>
+<th style="text-align: right;">Kinase inhibitors</th>
+<th style="text-align: right;">Microtubule destabilizers</th>
+<th style="text-align: right;">Microtubule stabilizers</th>
+<th style="text-align: right;">Protein degradation</th>
+<th style="text-align: right;">Protein synthesis</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td>Actin disruptors</td>
-<td align="right">4</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">0</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>Aurora kinase inhibitors</td>
-<td align="right">0</td>
-<td align="right">12</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td>Cholesterol-lowering</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">6</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>DNA damage</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">8</td>
-<td align="right">5</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td>DNA replication</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">2</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>Eg5 inhibitors</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">6</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">2</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td>Epithelial</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">8</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>Kinase inhibitors</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">5</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td>Microtubule destabilizers</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">6</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">12</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>Microtubule stabilizers</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">8</td>
-<td align="right">1</td>
-<td align="right">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td>Protein degradation</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">5</td>
-<td align="right">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td>Protein synthesis</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">8</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">8</td>
 </tr>
 </tbody>
-</table>
-</div>
+</table></section>
 </div>
   </div>
 
@@ -1469,7 +1456,7 @@ confusion_matrix &lt;-<span class="st"> </span>caret<span class="op">::</span><s
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="http://hadley.github.io/pkgdown/">pkgdown</a>.</p>
+  <p>Site built with <a href="http://pkgdown.r-lib.org/">pkgdown</a>.</p>
 </div>
 
       </footer>
