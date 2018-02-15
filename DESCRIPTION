@@ -40,7 +40,9 @@ Suggests:
     tidyr (>= 0.7.1),
     tsne (>= 0.1-3),
     doParallel (>= 1.0.10)
-Remotes: CellProfiler/cytominer
+Remotes: 
+    cytomining/cytostats,
+    cytomining/cytominer
 VignetteBuilder: knitr
 URL: https://github.com/cytomining/cytominergallery
 BugReports: https://github.com/cytomining/cytominergallery/issues
