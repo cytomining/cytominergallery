@@ -321,9 +321,9 @@ n_top_cor <- 5
 correlations <-
   sampled_objects %>%
   select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
-  parallel_cor(splits = splits,
-               cores = cores,
-               cov_fun = "two_pass_multi_covar") %>%
+  cytostats::parallel_cor(splits = splits,
+                          cores = cores,
+                          cov_fun = "two_pass_multi_covar") %>%
   as.data.frame %>%
   rownames_to_column("feature_1") %>%
   gather(feature_2, cor, -feature_1) %>%
@@ -357,9 +357,9 @@ rbenchmark::benchmark(
   sampled_objects %>%
     select(matches("^Cells_|^Cytoplasm_|^Nuclei_")) %>%
     sample_frac(sample_fraction) %>%
-    parallel_cor(splits = splits,
-                 cores = cores,
-                 cov_fun = "two_pass_multi_covar"), replications = 3) %>%
+    cytostats::parallel_cor(splits = splits,
+                            cores = cores,
+                            cov_fun = "two_pass_multi_covar"), replications = 3) %>%
   select(-test) %>%
   gather(key, value)
   
