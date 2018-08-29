@@ -235,8 +235,11 @@ predict_moa <- function(correlation, compound, mechanism){
 }
 
 compound <- profiles$Image_Metadata_Compound
+
 prediction <- predict_moa(correlation, compound, mechanism)
-confusion_matrix <- caret::confusionMatrix(prediction, mechanism)
+
+confusion_matrix <- caret::confusionMatrix(as.factor(prediction), 
+                                           as.factor(mechanism))
 ```
 
 What's the classification accuracy?
@@ -276,7 +279,9 @@ Do we get better results using SNF?
 
 ```{r}
 prediction <- predict_moa(snf_distance, compound, mechanism)
-confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
+
+confusion_matrix <- caret::confusionMatrix(as.factor(prediction), 
+                                           as.factor(mechanism))
 
 evaluate_prediction(confusion_matrix) %>%
   knitr::kable(digits = 2)
@@ -324,7 +329,8 @@ How is the performance?
 
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
-confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
+confusion_matrix <- caret::confusionMatrix(as.factor(prediction), 
+                                           as.factor(mechanism))
 
 evaluate_prediction(confusion_matrix) %>%
   knitr::kable(digits = 2)
@@ -374,7 +380,8 @@ Do we get better results?
 ```{r fig.width=8, fig.height=6, message=FALSE}
 prediction <- predict_moa(snf_distance, compound, mechanism)
 
-confusion_matrix <- caret::confusionMatrix(prediction, mechanism) 
+confusion_matrix <- caret::confusionMatrix(as.factor(prediction), 
+                                           as.factor(mechanism))
 
 evaluate_prediction(confusion_matrix) %>%
   knitr::kable(digits = 2)

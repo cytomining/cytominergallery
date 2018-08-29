@@ -11,7 +11,7 @@ Authors@R: as.person(c(
   ))
 Description: A gallery of cytominer vignettes.
 Depends:
-    R (>= 3.3.3)
+    R (>= 3.3.0)
 License: file LICENSE
 LazyData: TRUE
 Suggests:

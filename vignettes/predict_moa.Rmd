@@ -296,7 +296,8 @@ prediction <- sapply(1:nrow(correlation_masked),
                function(i) mechanism[order(correlation_masked[i,],
                                            decreasing = TRUE)[1]])
 
-confusion_matrix <- caret::confusionMatrix(prediction, mechanism)
+confusion_matrix <- caret::confusionMatrix(as.factor(prediction), 
+                                           as.factor(mechanism))
 ```
 
 What's the classification accuracy?
