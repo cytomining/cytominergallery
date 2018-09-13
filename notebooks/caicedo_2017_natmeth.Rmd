@@ -1,0 +1,142 @@
+---
+title: "Reproduce figures from Caicedo et al. 2017"
+output: html_notebook
+---
+
+This notebook reproduces figures from the [(Caicedo et al. 2017)](https://www.nature.com/articles/nmeth.4397).
+This dataset is from [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321) and is part of the
+[BBBC021](https://data.broadinstitute.org/bbbc/BBBC021/) dataset:
+
+*This image set provides a basis for testing image-based profiling methods wrt. to their ability to predict the mechanisms of action of a compendium of drugs. The image set was collected using a typical set of morphological labels and uses a physiologically relevant p53-wildtype breast-cancer model system (MCF-7) and a mechanistically distinct set of targeted and cancer-relevant cytotoxic compounds that induces a broad range of gross and subtle phenotypes.*
+
+The images were analyzed using [CellProfiler](http://cellprofiler.org). The
+CellProfiler pipelines and complete set of instructions to generate the data
+are provided in [(Ljosa 2013)](http://jbx.sagepub.com/content/18/10/1321).
+
+This notebooks assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform/projects/dp_treatment-classification_az/workspace/backend/ljosa_2013/analysis_batch_stable/ljosa_2013.sqlite> has been downloaded into `~/Downloads`.
+
+
+```{r libraries, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(stringr)
+```
+
+
+# Load data
+
+First, load the data! The data is contained in 4 tables named `Image`,
+`Cytoplasm`, `Cells`, and `Nuclei`. The code below joins these tables to
+create a single table named `object`.
+
+
+```{r load, message=FALSE}
+
+backend <- file.path(Sys.getenv("HOME"), "Downloads", "ljosa_2013.sqlite")
+
+db <- src_sqlite(path = backend)
+
+image <- tbl(src = db, "Image")
+
+object <-
+  tbl(src = db, "Cells") %>%
+  inner_join(tbl(src = db, "Cytoplasm"),
+                    by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  inner_join(tbl(src = db, "Nuclei"),
+                    by = c("TableNumber", "ImageNumber", "ObjectNumber"))
+
+object %<>% inner_join(image, by = c("TableNumber", "ImageNumber"))
+
+```
+
+
+In this table, the measurement columns start with `Nuclei_`, `Cells_`, or
+`Cytoplasm_`.
+
+```{r}
+variables <-
+  colnames(object) %>%
+  stringr::str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+```
+
+How many variables?
+
+```{r}
+print(length(variables))
+```
+
+How many cells?
+
+```{r}
+object %>%
+  count() %>%
+  knitr::kable(caption = "No. of cells")
+```
+
+## Sample cells
+
+```{r sample_cells, message=FALSE}
+
+# sample images 
+sampled_images <-
+  image %>%
+  filter(ImageNumber < 10) %>%
+  collect(n = Inf)
+
+if (db_has_table(db$con, table = "sampled_images")) {
+  db$con %>% db_drop_table(table = "sampled_images")
+}
+
+sampled_images <- dplyr::copy_to(db, sampled_images)
+
+# sample cells from the sampled images
+sampled_objects <-
+  sampled_images %>%
+  inner_join(
+    tbl(db, "Cells") %>% select(TableNumber, ImageNumber, ObjectNumber),
+    by = c("TableNumber", "ImageNumber")) %>%
+  collect(n = Inf) 
+
+if (db_has_table(db$con, table = "sampled_objects")) {
+  db$con %>% db_drop_table(table = "sampled_objects")
+}
+
+sampled_objects <- dplyr::copy_to(db, sampled_objects)
+
+sampled_objects %<>%
+  inner_join(tbl(db, "Cells"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  inner_join(tbl(db, "Cytoplasm"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  inner_join(tbl(db, "Nuclei"), by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
+  collect(n = Inf)
+
+```
+## Plot densities of features
+
+```{r plot_densities, eval=TRUE}
+
+if(!dir.exists("variable_densities")) {
+  dir.create("variable_densities")
+}
+
+variables <- c("Cells_Texture_InfoMeas2_CorrTub_10_0",
+               "Nuclei_AreaShape_Solidity",
+               "Nuclei_AreaShape_Orientation",
+               "Nuclei_Neighbors_FirstClosestDistance_20",
+               "Nuclei_AreaShape_Zernike_9_7",
+               "Nuclei_Intensity_MinIntensity_CorrDAPI",
+               "Nuclei_Neighbors_NumberOfNeighbors_10")
+
+for (variable in variables) {
+  g <- ggplot(sampled_objects, aes_string(variable)) +
+    stat_density(adjust = 0.8, alpha = 0.5)
+
+  print(g)
+  
+  ggsave(plot = g,
+         filename = sprintf("variable_densities/%s.png", variable),
+         width = 5, height = 5)
+}
+
+```
+
