@@ -1,0 +1,121 @@
+---
+title: "Compute similarity matrix"
+output: html_notebook
+---
+
+```{r}
+library(magrittr)
+library(tidyverse)
+```
+
+# Load data
+
+```{r}
+profiles <-
+  "https://raw.githubusercontent.com/cytomining/cytominergallery/master/inst/extdata/ljosa_jbiomolscreen_2013_per_well_mean.csv"
+
+moa <-
+  "https://raw.githubusercontent.com/cytomining/cytominergallery/master/inst/extdata/BBBC021_v1_moa.csv"
+
+metadata <-
+  "https://raw.githubusercontent.com/cytomining/cytominergallery/master/inst/extdata/BBBC021_v1_image.csv"
+
+profiles <- readr::read_csv(profiles)
+
+moa <- readr::read_csv(moa)  %>%
+  rename(
+    Image_Metadata_Compound = compound,
+    Image_Metadata_Concentration = concentration,
+    Image_Metadata_MoA = moa
+  )
+
+metadata <- readr::read_csv(metadata) %>%
+  rename(Image_Metadata_Plate = Image_Metadata_Plate_DAPI,
+         Image_Metadata_Well = Image_Metadata_Well_DAPI) %>%
+  select(matches("^Image_Metadata")) %>%
+  inner_join(moa) %>%
+  distinct()
+
+profiles %<>%
+  inner_join(metadata)
+
+names(profiles) <- str_replace(names(profiles), "^Image_", "")
+
+profiles %<>% select(matches("^Metadata_"), everything())
+
+variables <-
+  colnames(profiles) %>%
+  str_subset("^Nuclei_|^Cells_|^Cytoplasm_")
+```
+
+# Create similarity matrix
+
+```{r}
+
+# get data matrix
+data_matrix <-
+  profiles %>%
+  select(-matches("Metadata"))
+
+# get metadata
+metadata <-
+  profiles %>%
+  select(matches("Metadata")) %>%
+  rowid_to_column(var = "id")
+
+# measure similarities between treatments
+similarity <- cor(t(data_matrix))
+
+colnames(similarity) <- seq(1, ncol(similarity))
+
+similarity %<>%
+  as_tibble() %>%
+  rowid_to_column(var = "id1") %>%
+  gather(id2, correlation,-id1) %>%
+  mutate(id2 = as.integer(id2)) %>%
+  filter(id1 != id2) %>%
+  arrange(desc(correlation))
+
+# annotate the similarities data frame
+similarity %<>%
+  inner_join(
+    metadata %>%
+      select(
+        id,
+        Metadata_Plate,
+        Metadata_Well,
+        Metadata_Compound,
+        Metadata_Concentration,
+        Metadata_MoA
+      ),
+    by = c("id1" = "id")
+  ) %>%
+  rename(
+    Metadata_Plate1 = Metadata_Plate,
+    Metadata_Well1 = Metadata_Well,
+    Metadata_Compound1 = Metadata_Compound,
+    Metadata_Concentration1 = Metadata_Concentration,
+    Metadata_MoA1 = Metadata_MoA
+  )  %>%
+  inner_join(
+    metadata %>%
+      select(
+        id,
+        Metadata_Plate,
+        Metadata_Well,
+        Metadata_Compound,
+        Metadata_Concentration,
+        Metadata_MoA
+      ),
+    by = c("id2" = "id")
+  ) %>%
+  rename(
+    Metadata_Plate2 = Metadata_Plate,
+    Metadata_Well2 = Metadata_Well,
+    Metadata_Compound2 = Metadata_Compound,
+    Metadata_Concentration2 = Metadata_Concentration,
+    Metadata_MoA2 = Metadata_MoA
+  ) %>%
+  arrange(desc(correlation))
+```
+
