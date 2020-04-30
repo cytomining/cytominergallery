@@ -17,7 +17,7 @@ License: file LICENSE
 LazyData: TRUE
 Suggests:
     caret (>= 6.0-71),
-    cytominer,
+    cytominer (>= 0.2.1),
     dbplyr (>= 1.1.0),
     dplyr (>= 0.7.2),
     e1071 (>= 1.6-7),
@@ -42,8 +42,7 @@ Suggests:
     tsne (>= 0.1-3),
     doParallel (>= 1.0.10)
 Remotes: 
-    cytomining/cytostats,
-    cytomining/cytominer
+    cytomining/cytostats
 VignetteBuilder: knitr
 URL: https://github.com/cytomining/cytominergallery
 BugReports: https://github.com/cytomining/cytominergallery/issues
