@@ -1,7 +1,8 @@
+Encoding: UTF-8
 Package: cytominergallery
 Type: Package
 Title: A Gallery of Cytominer Vignettes
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: as.person(c(
     "Tim Becker <tbecker@broadinstitute.org> [aut]",
     "Allen Goodman <allen.goodman@icloud.com> [aut]",
@@ -46,4 +47,4 @@ Remotes:
 VignetteBuilder: knitr
 URL: https://github.com/cytomining/cytominergallery
 BugReports: https://github.com/cytomining/cytominergallery/issues
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.0

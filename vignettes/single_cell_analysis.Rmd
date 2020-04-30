@@ -52,12 +52,28 @@ db <- src_sqlite(path = backend)
 
 image <- tbl(src = db, "Image")
 
+nuclei <- 
+  tbl(src = db, "Nuclei") %>% 
+  select(-ObjectNumber)
+
+cells <- 
+  tbl(src = db, "Cells") %>% 
+  select(-ObjectNumber)
+
+cytoplasm <- 
+  tbl(src = db, "Cytoplasm") %>% 
+  select(-ObjectNumber)
+
 object <-
   tbl(src = db, "Cells") %>%
-  inner_join(tbl(src = db, "Cytoplasm"),
-                    by = c("TableNumber", "ImageNumber", "ObjectNumber")) %>%
   inner_join(tbl(src = db, "Nuclei"),
-                    by = c("TableNumber", "ImageNumber", "ObjectNumber"))
+             by = c("TableNumber",
+                    "ImageNumber",
+                    "Cells_Parent_Nuclei" = "Nuclei_Number_Object_Number")) %>%
+  inner_join(tbl(src = db, "Cytoplasm"),
+             by = c("TableNumber",
+                    "ImageNumber",
+                    "Cells_Number_Object_Number" = "Cytoplasm_Parent_Cells"))
 
 object %<>% inner_join(image, by = c("TableNumber", "ImageNumber"))
 

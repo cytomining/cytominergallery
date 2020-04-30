@@ -3,8 +3,7 @@
 \docType{package}
 \name{cytominergallery}
 \alias{cytominergallery}
-\alias{cytominergallery-package}
-\title{cytominergallery.}
+\title{cytominergallery}
 \description{
-cytominergallery.
+A Gallery of Cytominer Vignettes
 }
