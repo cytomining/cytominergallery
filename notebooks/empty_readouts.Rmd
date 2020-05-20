@@ -1,0 +1,519 @@
+---
+title: "Inspect CellProfiler readouts for zero and NA -valued features"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
+---
+
+Here, we inspect CellProfiler features generated from a standard Cell Painting dataset to identify features that don't capture biologically relevant attributes.
+
+```{r echo=TRUE}
+show_table <- print
+```
+
+If running interactively in RStudio, 
+
+- change `output` in the header of this markdown to `html_notebook` and
+- change to `eval=TRUE` below
+
+When knitting for pushing to GitHub,
+
+- change `output` in the header of this markdown to `github_document` and
+- change to `eval=FALSE` below
+
+```{r eval=FALSE}
+show_table <- knitr::kable
+```
+
+
+```{r}
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(tidyverse))
+```
+
+# Sample 
+
+Randomly sample ~5000 cells.
+
+```{r eval=FALSE}
+sqlite_file <- "single_cell.sqlite"
+
+db <- DBI::dbConnect(RSQLite::SQLite(), sqlite_file, loadable.extensions = TRUE)
+
+nuclei <- 
+  DBI::dbGetQuery(db, "SELECT * FROM Nuclei ORDER BY RANDOM() LIMIT 5000;") %>%
+  collect() %>%
+  select(-ObjectNumber)
+
+nuclei_lut <-
+  nuclei %>%
+  select(TableNumber, ImageNumber, Nuclei_Number_Object_Number)
+
+cells <- 
+  tbl(src = db, "Cells") %>% 
+  select(-ObjectNumber) %>% 
+  inner_join(
+    nuclei_lut,
+    by = c("TableNumber", 
+           "ImageNumber", 
+           "Cells_Parent_Nuclei" = "Nuclei_Number_Object_Number"),
+    copy = TRUE
+  ) %>%
+  collect()
+
+cytoplasm <- 
+  tbl(src = db, "Cytoplasm") %>% 
+  select(-ObjectNumber) %>% 
+  inner_join(
+    nuclei_lut,
+    by = c("TableNumber", 
+           "ImageNumber", 
+           "Cytoplasm_Parent_Nuclei" = "Nuclei_Number_Object_Number"),
+    copy = TRUE
+  ) %>%
+  collect()
+
+nuclei_cells <- 
+  inner_join(
+    nuclei,
+    cells,
+    by = c("TableNumber", 
+           "ImageNumber", 
+           "Nuclei_Number_Object_Number" = "Cells_Parent_Nuclei")
+  )
+
+nuclei_cells_cytoplasm <- 
+  inner_join(
+    nuclei_cells,
+    cytoplasm,
+    by = c("TableNumber",
+           "ImageNumber",
+           "Cells_Number_Object_Number" = "Cytoplasm_Parent_Cells")
+  )
+
+nuclei_cells_cytoplasm %>% write_csv("single_cell_sampled.csv.gz")
+```
+
+# Load
+
+Load the sample
+
+```{r eval=TRUE}
+sampled_cells <-
+  read_csv(
+    file.path(
+      Sys.getenv("HOME"),
+      "Downloads",
+      "single_cell_sampled.csv.gz"
+    ),
+    col_types = cols(.default = col_double())
+  )
+```
+
+# Select features
+
+Specify which features are going to be checked for `0` or `NA`.
+In this case, we want to check for all features.
+
+```{r}
+no_check_empty_features <- 
+  c("TableNumber", "ImageNumber")
+
+check_empty_features <- 
+  setdiff(
+    names(sampled_cells),
+    no_check_empty_features
+  )
+```
+
+# Create summary data frame
+
+Summarize number of cells with `0` or `NA` per feature
+
+```{r}
+empty_frequency <- 
+  inner_join(
+    sampled_cells %>% 
+      summarize_at(check_empty_features,  ~sum(. == 0, na.rm = TRUE)) %>%
+      pivot_longer(everything(), names_to = "cp_feature_name", values_to = "number_of_zero"),    
+    sampled_cells %>% 
+      summarize_at(check_empty_features,  ~sum(is.na(.))) %>%
+      pivot_longer(everything(), names_to = "cp_feature_name", values_to = "number_of_na"),
+    by = "cp_feature_name"
+  )
+
+empty_frequency %<>%
+  separate(col = "cp_feature_name",
+           into = c("compartment", "feature_group", "feature_name"),
+           sep = "_", extra = "merge", remove = FALSE)
+
+channels <- c("DNA", "RNA", "ER", "Mito", "AGP", "Brightfield")
+
+channels <- c(as.vector(outer(channels, channels, FUN = paste, sep = "_")),
+              channels)
+
+# get channel name
+channel_name <- function(feature_name) {
+  name <- channels[which(stringr::str_detect(feature_name, channels))[1]]
+
+  if (is.na(name)) {
+    name <- "None"
+  }
+
+  name
+}
+
+# add channel name to row annotations
+empty_frequency %<>%
+  rowwise() %>%
+  mutate(channel_name = channel_name(feature_name)) %>%
+  ungroup() %>%
+  select(c("cp_feature_name",
+           "compartment",
+           "channel_name",
+           "feature_group",
+           "feature_name",
+           "number_of_zero",
+           "number_of_na")
+         )
+```
+
+Add texture angle+scale, granularity scale
+
+```{r}
+empty_frequency %<>%
+  rowwise() %>%
+  mutate(t_scale =
+           as.integer(
+             str_match(
+               cp_feature_name,
+               "Texture_([A-Za-z0-9]+)_([A-Za-z0-9]+)_([0-9]+)_([0-9]+)"
+             )[[4]]
+           )) %>%
+  mutate(t_angle =
+           as.integer(
+             str_match(
+               cp_feature_name,
+               "Texture_([A-Za-z0-9]+)_([A-Za-z0-9]+)_([0-9]+)_([0-9]+)"
+             )[[5]]
+           )) %>%
+  mutate(g_scale =
+           as.integer(str_match(
+             cp_feature_name, "Granularity_([0-9]+)_"
+           )[[2]])) %>%
+  ungroup()
+```
+
+
+```{r}
+empty_frequency %<>%
+  rowwise() %>%
+  mutate(t_feature_name =
+          str_match(
+               feature_name,
+               "([A-Za-z0-9]+)_([A-Za-z0-9]+)_([0-9]+)_([0-9]+)"
+             )[[2]]
+           ) %>%
+  ungroup()
+```
+
+
+```{r}
+empty_frequency %<>%
+  rowwise() %>%
+  mutate(channel_name_1 =
+          str_match(
+               channel_name,
+               "([A-Za-z0-9]+)_([A-Za-z0-9]+)"
+             )[[2]]
+           ) %>%
+  mutate(channel_name_2 =
+          str_match(
+               channel_name,
+               "([A-Za-z0-9]+)_([A-Za-z0-9]+)"
+             )[[3]]
+           ) %>%
+  mutate(c_feature_name =
+          str_match(
+               feature_name,
+               "([A-Za-z0-9]+)_([A-Za-z0-9]+)_([A-Za-z0-9]+)"
+             )[[2]]
+           ) %>%
+  ungroup()
+```
+
+# Display summary
+
+```{r}
+empty_frequency %>% sample_n(5)
+```
+
+# Inspect summary for NAs
+
+```{r}
+empty_frequency %>%
+  filter(number_of_na > 0) %>%
+  count(number_of_na) %>% 
+  arrange(desc(n)) %>%
+  show_table()
+```
+```{r}
+empty_frequency %>%
+  filter(number_of_na > 9) %>%
+  ggplot(aes(number_of_na)) + geom_histogram(binwidth = 5)
+```
+```{r}
+empty_frequency %>%
+  filter(number_of_na > 9) %>%
+  show_table()
+
+empty_frequency %>%
+  filter(number_of_na > 9) %>%
+  group_by(feature_group, c_feature_name) %>%
+  tally() %>%
+  show_table()
+```
+
+
+# Inspect summary for zeros
+
+## All except correlation and no-channel
+
+Get an overview of all features, excluding (for now) 
+- `Correlation` features 
+- features not associated with a channel
+
+```{r}
+empty_frequency %>%
+  filter(feature_group != "Correlation") %>% 
+  filter(channel_name != "None") %>%
+  ggplot(aes(compartment, number_of_zero)) + 
+  geom_boxplot() + 
+  facet_grid(channel_name ~ feature_group) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+## Always remove location
+
+Exclude `Location` because we definitely want to exclude them
+
+`Location` features are generated by:
+
+- [MeasureObjectSizeShape](http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.1.5/modules/measurement.html#measureobjectsizeshape)  (`Location_Center_{X|Y}`)
+- [MeasureObjectIntensity](http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.1.5/modules/measurement.html#measureobjectintensity)  (`Location_{CenterMass|Max}Intensity`)
+- [IdentifyPrimaryObjects](http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.1.5/modules/measurement.html#identifyprimaryobjects) or [IdentifySecondaryObjects](http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.1.5/modules/measurement.html#identifysecondaryobjects)  (`Location_{X|Y}`)
+
+```{r}
+location_features <-
+  str_subset(check_empty_features, 
+             "(Location_Center_(X|Y|Z))|(Location_(X|Y|Z))|(Location_(CenterMass|Max)Intensity_(X|Y|Z))") %>%
+  sort()
+
+tibble(location_features) %>%
+  show_table()
+```
+
+## Only no-channel
+
+Get an overview of only features not associated with a channel
+
+```{r}
+empty_frequency %>%
+  filter(channel_name == "None") %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  ggplot(aes(compartment, number_of_zero)) + 
+  geom_boxplot() + 
+  facet_grid(channel_name ~ feature_group) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+
+```{r}
+empty_frequency %>%
+  filter(channel_name == "None") %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(number_of_zero > 0) %>%
+  arrange(desc(number_of_zero)) %>%
+  select(cp_feature_name, feature_group, number_of_zero, number_of_na)
+```
+
+### Exclude Euler and Center 
+
+Exclude 
+
+- `EulerNumber` - *this may be informative in some cases, but we drop in this analysis*
+- `AreaShape_Center_{X,Y,Z}`
+
+From [MeasureObjectSizeShape](http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.1.5/modules/measurement.html#measureobjectsizeshape): _Center_X, Center_Y, Center_Z: The x-, y-, and (for 3D objects) z- coordinates of the point farthest away from any object edge (the centroid). Note that this is not the same as the Location-X and -Y measurements produced by the Identify or Watershed modules or the Location-Z measurement produced by the Watershed module._
+
+
+```{r}
+empty_frequency %>%
+  filter(channel_name == "None") %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(!str_detect(feature_name, "EulerNumber")) %>%
+  filter(!str_detect(cp_feature_name, "AreaShape_Center_(X|Y|Z)")) %>%
+  filter(number_of_zero > 0) %>%
+  arrange(desc(number_of_zero)) %>%
+  select(cp_feature_name, feature_group, number_of_zero, number_of_na)
+```
+
+### Exclude very small distances
+
+`Nuclei_Neighbors_*_2` is mostly `0` because two pixels is too little - *this may be informative at lower magnifications, but we drop in this analysis* 
+
+Do we actually need `Nuclei_Neighbors_*` or is `Cells_Neighbors_*` sufficient? Not sure.
+
+```{r}
+empty_frequency %>%
+  filter(channel_name == "None") %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(!str_detect(feature_name, "EulerNumber")) %>%
+  filter(!str_detect(cp_feature_name, "AreaShape_Center_(X|Y|Z)")) %>%
+  filter(!str_detect(cp_feature_name, "Nuclei_Neighbors_.*_2")) %>%
+  filter(number_of_zero > 0) %>%
+  arrange(desc(number_of_zero)) %>%
+  select(cp_feature_name, feature_group, number_of_zero, number_of_na)
+```
+
+### Exclude ClosestObjectNumber
+
+- `Cells_Neighbors_NumberOfNeighbors_Adjacent == 0` are "isolated" cells 
+- `*ClosestObjectNumber` should be dropped because it is the index of the first or second closest object
+
+```{r}
+empty_frequency %>%
+  filter(channel_name == "None") %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(!str_detect(feature_name, "EulerNumber")) %>%
+  filter(!str_detect(cp_feature_name, "AreaShape_Center_(X|Y|Z)")) %>%
+  filter(!str_detect(cp_feature_name, "Nuclei_Neighbors_.*_2")) %>%
+  filter(!str_detect(cp_feature_name, "Neighbors_(First|Second)ClosestObjectNumber_.*")) %>%
+  filter(number_of_zero > 0) %>%
+  arrange(desc(number_of_zero)) %>%
+  select(cp_feature_name, feature_group, number_of_zero, number_of_na)
+```
+
+The rest of the measurements above are reasonable to preserve.
+
+## All except correlation and no-channel  
+
+```{r}
+empty_frequency %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(feature_group != "Correlation") %>% 
+  filter(channel_name != "None") %>%
+  ggplot(aes(compartment, number_of_zero)) + 
+  geom_boxplot() + 
+  facet_grid(channel_name ~ feature_group) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+### Only granularity
+
+More zeros at larger scales
+
+```{r}
+empty_frequency %>%
+  filter(feature_group == "Granularity") %>% 
+  ggplot(aes(g_scale, number_of_zero, color = compartment)) + 
+  geom_line() + 
+  facet_wrap(~channel_name) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+
+### Only texture
+
+More zeros at larger scales
+
+```{r}
+empty_frequency %>%
+  filter(feature_group == "Texture") %>%
+  ggplot(aes(compartment, number_of_zero)) +
+  geom_boxplot() +
+  facet_grid(t_scale ~ channel_name) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+Things seems a bit off in 
+- Mito
+- Scale = 20 in Nuclei
+
+#### Mito
+
+```{r}
+empty_frequency %>%
+  filter(feature_group == "Texture") %>%
+  filter(channel_name == "Mito") %>%
+  ggplot(aes(t_feature_name, number_of_zero, color = as.factor(t_scale))) +
+  geom_point() +
+  facet_wrap(~ compartment) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+#### Scale=20 in Nuclei, non-Mito
+
+```{r}
+empty_frequency %>%
+  filter(feature_group == "Texture") %>%
+  filter(t_scale == 20 & compartment == "Nuclei" & channel_name != "Mito") %>%
+  ggplot(aes(t_feature_name, number_of_zero, color = channel_name)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
+### No granularity and texture
+
+
+```{r}
+empty_frequency %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(feature_group != "Correlation") %>% 
+  filter(channel_name != "None") %>%
+  filter(!(feature_group %in% c("Granularity", "Texture"))) %>% 
+  filter(number_of_zero > 0) %>%
+  arrange(desc(number_of_zero)) %>%
+  select(cp_feature_name, feature_group, number_of_zero, number_of_na)
+```
+
+The innermost ring of `RadialDistribution` is expected to be zero in some cases, for cytoplasm, so this is fine.
+
+## Only correlation
+
+```{r}
+empty_frequency %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(feature_group == "Correlation") %>% 
+  ggplot(aes(compartment, number_of_zero, color = c_feature_name)) + 
+  geom_point() + 
+  facet_grid(channel_name_1 ~ channel_name_2) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+### No Costes
+
+```{r}
+empty_frequency %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(feature_group == "Correlation") %>% 
+  filter(c_feature_name != "Costes") %>% 
+  ggplot(aes(compartment, number_of_zero, color = c_feature_name)) + 
+  geom_point() + 
+  facet_grid(channel_name_1 ~ channel_name_2) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+```{r}
+empty_frequency %>%
+  filter(!(cp_feature_name %in% c(location_features))) %>%
+  filter(feature_group == "Correlation") %>% 
+  filter(c_feature_name != "Costes") %>% 
+  ggplot(aes(compartment, number_of_na, color = c_feature_name)) + 
+  geom_point() + 
+  facet_grid(channel_name_1 ~ channel_name_2) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0))
+```
+
