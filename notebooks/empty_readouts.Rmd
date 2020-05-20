@@ -1,6 +1,12 @@
 ---
 title: "Inspect CellProfiler readouts for zero and NA -valued features"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
 ---
 
 Here, we inspect CellProfiler features generated from a standard Cell Painting dataset to identify features that don't capture biologically relevant attributes.
