@@ -25,7 +25,7 @@ summarizing them into per-well measurements by computing averages. This
 summarized data will later be used to predict mechanism-of-action of the
 compounds  (see the `predict_moa` vignette.)
 
-This vignette assumes that the single-cell data <https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite> has been downloaded into `~/Downloads`.
+This vignette assumes that the single-cell data <https://cellpainting-gallery.s3.amazonaws.com/cpg0010-caie-drugresponse/broad-az/workspace/backend/ljosa_2013/analysis_batch_stable/ljosa_jbiomolscreen_2013.sqlite> has been downloaded into `~/Downloads`.
 
 
 ```{r libraries, message=FALSE}
