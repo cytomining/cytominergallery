@@ -6,7 +6,7 @@
 
 Install [R](https://www.r-project.org) and [RStudio](https://www.rstudio.com/).
 
-Download this [sqlite](https://s3.amazonaws.com/imaging-platform-collaborator/2016_09_09_cytominer_workshop/ljosa_jbiomolscreen_2013.sqlite) file into `~/Downloads` (required by the vignette `single_cell_analysis`).
+Download this [sqlite](https://cellpainting-gallery.s3.amazonaws.com/cpg0010-caie-drugresponse/broad-az/workspace/backend/ljosa_2013/analysis_batch_stable/ljosa_jbiomolscreen_2013.sqlite) file into `~/Downloads` (required by the vignette `single_cell_analysis`).
 
 Install the `cytominergallery` package from GitHub:
 
